@@ -1,11 +1,11 @@
-package your.main.package.idk;
+package a.custom.package.idk;
 
 import org.bukkit.Bukkit;
 import org.bukkit.advancement.Advancement;
 
 import java.lang.reflect.InvocationTargetException;
 
-public class ReflectKeys {
+public class AdvancementInfo {
 
     private final Advancement adv;
 
@@ -13,7 +13,7 @@ public class ReflectKeys {
     private String description;
     private String frameType;
 
-    public ReflectKeys(Advancement adv) {
+    public AdvancementInfo(Advancement adv) {
         this.adv = adv;
         registerKeys();
     }
