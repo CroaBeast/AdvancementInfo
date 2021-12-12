@@ -1,4 +1,4 @@
-package me.croabeast.ermacore.listeners;
+package your.main.package.idk;
 
 import org.bukkit.Bukkit;
 import org.bukkit.advancement.Advancement;
