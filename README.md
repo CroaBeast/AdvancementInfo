@@ -11,7 +11,7 @@ Only works in 1.12 to 1.18.
 Advancement adv = Bukkit.getAdvancement(key);
 AdvancementInfo info = new AdvancementInfo(adv);
 ```
-3. Get the desired string:
+3. Get the desired string(s):
 ```java
 String frameType = info.getFrameType();
 String title = info.getTitle();
