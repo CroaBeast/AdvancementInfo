@@ -1,7 +1,7 @@
-# AdvancementInfo
+# AdvancementInfo | 1.12 - 1.18
 
 This class will help you to get the title, the description and the frame type of an advancement.
-Only works in 1.12 to 1.18.
+If you are using PaperMC as the base of your project, use its method instead of this.
 
 #	How to use it in your project?
 	
