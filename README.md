@@ -15,7 +15,9 @@ AdvancementInfo info = new AdvancementInfo(adv);
 ```java
 String frameType = info.getFrameType();
 String title = info.getTitle();
+
 String description = info.getDescription();
+String splittedDesc = info.getDescription(true, 24, "<n>");
 ```
 4. Use it in whatever you want.
 ```java
