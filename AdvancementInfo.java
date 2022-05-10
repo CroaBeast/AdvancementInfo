@@ -2,17 +2,21 @@ package a.custom.package.idk;
 
 import org.bukkit.*;
 import org.bukkit.advancement.*;
+import org.bukkit.inventory.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.*;
 
-public class AdvKeys {
+public class AdvancementInfo {
 
     private final Advancement adv;
-    @Nullable private String title, description, frameType;
+    
+    private String title, description, frameType;
+    private ItemStack item;
 
-    public AdvKeys(Advancement adv) {
+    public AdvancementInfo(Advancement adv) {
         this.adv = adv;
         registerKeys();
     }
@@ -47,6 +51,27 @@ public class AdvKeys {
     private Object getObject(Object initial, String method) {
         return getObject(null, initial, method);
     }
+
+    @Nullable
+    private Object bukkitItem(Object nmsItem) {
+        String c = "org.bukkit.craftbukkit";
+        Class<?> clazz = getNMSClass(c, "inventory.CraftItemStack", true);
+        if (clazz == null) return null;
+
+        Constructor<?> ct;
+        try {
+            ct = clazz.getDeclaredConstructor(nmsItem.getClass());
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+
+        ct.setAccessible(true);
+        try {
+            return ct.newInstance(nmsItem);
+        } catch (Exception e) {
+            return null;
+        }
+    }
     
     private void registerKeys() {
         Class<?> craftClass = getNMSClass("org.bukkit.craftbukkit", "advancement.CraftAdvancement", true);
@@ -76,9 +101,27 @@ public class AdvKeys {
 
         if (title == null || description == null) return;
 
+        Field itemField = null;
+        try {
+            itemField = craftDisplay.getClass().getDeclaredField("c");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Object itemStack = null;
+        if (itemField != null) {
+            itemField.setAccessible(true);
+            try {
+                itemStack = itemField.get(craftDisplay);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         this.frameType = frameType.toString();
         this.title = title.toString();
         this.description = description.toString();
+        this.item = (ItemStack) bukkitItem(itemStack);
     }
 
     @NotNull
@@ -140,5 +183,10 @@ public class AdvKeys {
 
         format = build.substring(0, build.length() - delimiter.length());
         return removeLiteralChars(format);
+    }
+
+    @Nullable
+    public ItemStack getItem() {
+        return item;
     }
 }
