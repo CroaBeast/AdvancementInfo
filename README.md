@@ -17,7 +17,9 @@ String frameType = info.getFrameType();
 String title = info.getTitle();
 
 String description = info.getDescription();
+
 String splittedDesc = info.getDescription(true, 24, "<n>");
+ItemStack item = info.getItem();
 ```
 4. Use it in whatever you want.
 ```java
