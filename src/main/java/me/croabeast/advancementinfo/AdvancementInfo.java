@@ -180,18 +180,19 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     *
+     * Gets the rewards object, you should cast it
+     * with the NMS AdvancementRewards class.
      * @return the rewards object, can be null
      */
     @Nullable
     public Object getRewards() {
-
         return rewards;
     }
 
     /**
-     *
-     * @return
+     * Gets the criteria object. You SHOULD convert this object
+     * to a Map<String, Criterion> object.
+     * @return the criteria object, can be null
      */
     @Nullable
     public Object getCriteria() {
@@ -199,8 +200,8 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     *
-     * @return
+     * Get the String matrix object of the requirements.
+     * @return requirements, can be null
      */
     @Nullable
     public String[][] getRequirements() {
