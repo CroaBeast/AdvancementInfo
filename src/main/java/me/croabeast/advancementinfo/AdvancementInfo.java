@@ -72,7 +72,7 @@ public class AdvancementInfo extends NMSHandler {
         this.desc = checkValue(description);
         frameType = checkValue(getObject(display, "e"), "PROGRESS");
 
-        parent = checkValue(getObject(getObject(nmsAdv, "a"), "getName"), "null");
+        parent = checkValue(getObject(getObject(nmsAdv, "b"), "getName"), "null");
         toChat = checkValue(getObject(display, "i"));
         hidden = checkValue(getObject(display, "j"));
 
