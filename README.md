@@ -3,9 +3,9 @@
 This class will help you to get the title, the description and the frame type of advancement.
 If you are using PaperMC as the base of your project, use its method instead of this.
 
-#	How to use it in your project?
+# How to use it in your project?
 	
-1. Add this class into your project.
+1. Add this class into your project copying it or add it via Maven or Gradle.
 2. Call a new instance for it:
 ```
 Advancement adv = Bukkit.getAdvancement(key);
@@ -21,5 +21,40 @@ String description = info.getDescription();
 String[] descArray = info.getDescription(24);
 ItemStack item = info.getItem();
 ```
-4. Use it in whatever you want. Check the ExampleClass here.
+4. Use it in whatever you want. Check the [ExampleClass](https://github.com/CroaBeast/AdvancementInfo/blob/main/Example.java) here.
 5. Output: ![alt text](https://i.imgur.com/XE0rwN7.png)
+
+# Maven and Gradle Integration
+Maven - add to pom.xml
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.github.CroaBeast</groupId>
+        <artifactId>AdvancementInfo</artifactId>
+        <!--Replace version with the latest release version-->
+        <version>RELEASE_TAG</version>
+    </dependency>
+</dependencies>
+```
+
+Gradle - add to build.gradle
+```
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+```
+dependencies {
+    implementation 'com.github.CroaBeast:AdvancementInfo:RELEASE_TAG'
+}
+```
