@@ -22,17 +22,15 @@ public abstract class NMSHandler {
     public static final int MAJOR_VERSION = Integer.parseInt(VERSION.split("\\.")[1]);
 
     @Nullable
-    protected Class<?> getNMSClass(String pack, String name, boolean hasVersion) {
-        Class<?> bukkitClass = Bukkit.getServer().getClass();
-        String version = bukkitClass.getPackage().getName().split("\\.")[3];
+    protected Class<?> getNMSClass(String pack, String name, boolean useVs) {
+        Package aPackage = Bukkit.getServer().getClass().getPackage();
 
+        String version = aPackage.getName().split("\\.")[3];
         pack = pack != null ? pack : "net.minecraft.server";
 
         try {
-            return Class.forName(pack + (hasVersion ? "." + version : "") + "." + name);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
+            return Class.forName(pack + (useVs ? "." + version : "") + "." + name);
+        } catch (Exception e) {
             return null;
         }
     }
@@ -48,7 +46,6 @@ public abstract class NMSHandler {
             clazz = clazz != null ? clazz : initial.getClass();
             return clazz.getDeclaredMethod(method).invoke(initial);
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
