@@ -8,6 +8,12 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * The class to get all the advancement info.
+ *
+ * @author CroaBeast
+ * @since 1.0
+ */
 public class AdvancementInfo extends NMSHandler {
 
     private String title = null, desc = null, frameType = null,
