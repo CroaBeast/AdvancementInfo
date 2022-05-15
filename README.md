@@ -11,7 +11,7 @@ If you are using PaperMC as the base of your project, use its method instead of 
 Advancement adv = Bukkit.getAdvancement(key);
 AdvancementInfo info = new AdvancementInfo(adv);
 ```
-3. Get the desired string(s):
+3. Get the desired object(s):
 ```
 String frameType = info.getFrameType();
 String title = info.getTitle();
