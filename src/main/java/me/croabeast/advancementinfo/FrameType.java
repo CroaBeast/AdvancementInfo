@@ -5,6 +5,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 
+/**
+ * The enum class for the frame types.
+ * @author CroaBeast
+ * @since 1.0
+ */
 public enum FrameType {
     /**
      * The unknown type, when the input is null or not found.

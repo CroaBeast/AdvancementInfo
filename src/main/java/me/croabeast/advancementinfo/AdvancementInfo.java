@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 /**
  * The class to get all the advancement info.
- *
  * @author CroaBeast
  * @since 1.0
  */

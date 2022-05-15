@@ -5,6 +5,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 
+/**
+ * The class that handles some NMS/Reflection methods.
+ * @author CroaBeast
+ * @since 1.0
+ */
 public abstract class NMSHandler {
 
     /**
