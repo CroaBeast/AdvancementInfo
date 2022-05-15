@@ -9,7 +9,7 @@
     <version>2.0</version>
     <packaging>jar</packaging>
 
-    <name>ExampleClass</name>
+    <name>AdvancementInfo</name>
 
     <properties>
         <java.version>1.8</java.version>
