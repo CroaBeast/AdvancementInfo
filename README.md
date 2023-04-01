@@ -22,6 +22,9 @@ String[] descArray = info.getDescription(24);
 ItemStack item = info.getItem();
 ```
 4. Use it in whatever you want. Check the [ExampleClass](https://github.com/CroaBeast/AdvancementInfo/blob/main/Example.java) here.
+5. Example Output: 
+
+![](https://i.imgur.com/htglb6H.png)
 
 # Maven and Gradle Integration
 Maven - add to pom.xml
