@@ -32,19 +32,19 @@ public class AdvancementInfo extends NMSHandler {
         if (craftClass == null) return;
 
         Object nmsAdv = getObject(craftClass, craftClass.cast(adv), "getHandle");
-        Object display = getObject(nmsAdv, "c");
+        Object display = getObject(nmsAdv, is_19_4() ? "d" : "c");
         if (display == null) return;
 
         Object rawTitle = getObject(display, "a"), rawDesc = getObject(display, "b");
 
         Object title = null, description = null;
         if (rawTitle != null && rawDesc != null) {
-            Class<?> chatClass = MAJOR_VERSION >= 17 ?
+            Class<?> chatClass = getVersion() >= 17 ?
                     getNMSClass("net.minecraft.network.chat", "IChatBaseComponent", false) :
                     getNMSClass(null, "IChatBaseComponent", true);
 
             if (chatClass != null) {
-                String method = MAJOR_VERSION < 13 ? "toPlainText" : "getString";
+                String method = getVersion() < 13 ? "toPlainText" : "getString";
                 title = getObject(chatClass, rawTitle, method);
                 description = getObject(chatClass, rawDesc, method);
             }
@@ -69,22 +69,27 @@ public class AdvancementInfo extends NMSHandler {
         }
 
         this.title = checkValue(title);
-        this.desc = checkValue(description);
+        desc = checkValue(description);
         frameType = checkValue(getObject(display, "e"), "PROGRESS");
 
-        parent = checkValue(getObject(getObject(nmsAdv, "b"), "getName"), "null");
+        parent = checkValue(getObject(nmsAdv, "b", "getName"), "null");
         toChat = checkValue(getObject(display, "i"));
         hidden = checkValue(getObject(display, "j"));
 
-        requirements = (String[][]) getObject(nmsAdv, "i");
-        rewards = getObject(nmsAdv, "d");
-        item = (ItemStack) getBukkitItem(nmsItemStack);
-        criteria = getObject(nmsAdv, "getCriteria");
+        requirements = (String[][]) getObject(nmsAdv, is_19_4() ? "j" : "i");
+        rewards = getObject(nmsAdv, is_19_4() ? "e" : "d");
+        item = getBukkitItem(nmsItemStack);
+        criteria = getObject(nmsAdv, is_19_4() ? "g" : "f");
+    }
+
+    private static boolean is_19_4() {
+        return getVersion() >= 19.4;
     }
 
     /**
      * Get the advancement type. Can be {@link FrameType#TASK TASK}, {@link FrameType#GOAL GOAL},
-     * {@link FrameType#CHALLENGE CHALLENGE} or {@link FrameType#UNKNOWN UNKNOWN} (if null)
+     * {@link FrameType#CHALLENGE CHALLENGE} or {@link FrameType#UNKNOWN UNKNOWN} (if null).
+     *
      * @return the type
      */
     @NotNull
@@ -94,6 +99,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Gets the advancement title or main name.
+     *
      * @return the title, can be null
      */
     @Nullable
@@ -101,17 +107,13 @@ public class AdvancementInfo extends NMSHandler {
         return title;
     }
 
-    /**
-     * Removes the special literal chars, to avoid parsing errors.
-     * @param input an input line
-     * @return the line without those chars
-     */
     private String removeLiteralChars(String input) {
         return input.replaceAll("\\\\Q", "").replaceAll("\\\\E", "");
     }
 
     /**
      * Gets the description. If null, it will return "No description."
+     *
      * @return the description
      */
     @NotNull
@@ -121,6 +123,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Gets the description stripped into substrings with the input length.
+     *
      * @param length a char length
      * @return the stripped description array
      */
@@ -156,6 +159,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Gets the name of the parent advancement
+     *
      * @return the parent name
      */
     @NotNull
@@ -165,6 +169,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Checks if the advancement can be announced into the chat
+     *
      * @return can announce to chat
      */
     public boolean announceToChat() {
@@ -173,6 +178,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Checks if the advancement is hidden.
+     *
      * @return is hidden
      */
     public boolean isHidden() {
@@ -181,6 +187,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Gets the item that represents the advancement.
+     *
      * @return the item, can be null
      */
     @Nullable
@@ -189,8 +196,8 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     * Gets the rewards object, you should cast it
-     * with the NMS AdvancementRewards class.
+     * Gets the rewards object, you should cast it with the NMS AdvancementRewards class.
+     *
      * @return the rewards object, can be null
      */
     @Nullable
@@ -199,8 +206,8 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     * Gets the criteria object. You SHOULD convert this object
-     * to a Map<String, Criterion> object.
+     * Gets the criteria object. You SHOULD convert this object to a Map<String, Criterion> object.
+     *
      * @return the criteria object, can be null
      */
     @Nullable
@@ -210,6 +217,7 @@ public class AdvancementInfo extends NMSHandler {
 
     /**
      * Get the String matrix object of the requirements.
+     *
      * @return requirements, can be null
      */
     @Nullable

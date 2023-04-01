@@ -10,7 +10,7 @@ import java.util.Set;
  * @author CroaBeast
  * @since 1.0
  */
-public enum FrameType {
+enum FrameType {
     /**
      * The unknown type, when the input is null or not found.
      */
@@ -31,7 +31,7 @@ public enum FrameType {
     /**
      * All the enum values in a HashSet.
      */
-    public static final Set<FrameType> VALUES = Sets.newHashSet(values());
+    static final Set<FrameType> VALUES = Sets.newHashSet(values());
 
     /**
      * Parses the enum to its simple name in lowercase.
@@ -47,7 +47,7 @@ public enum FrameType {
      * @param name an input name
      * @return the respective frame type
      */
-    public static FrameType getFrameType(@Nullable String name) {
+    static FrameType getFrameType(@Nullable String name) {
         if (name == null) return UNKNOWN;
         for (FrameType type : VALUES) {
             if (name.toLowerCase().equals(type + "")) return type;
