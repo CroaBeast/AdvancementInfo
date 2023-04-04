@@ -1,19 +1,26 @@
 package me.croabeast.advancementinfo;
 
-import org.bukkit.advancement.*;
-import org.bukkit.inventory.*;
-import org.jetbrains.annotations.*;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
+import static me.croabeast.advancementinfo.NMSHandler.*;
+
 /**
- * The class to get all the advancement info.
+ * The <code>AdvancementInfo</code> class manages all the NMS objects of an advancement,
+ * like its title, description, frame type, etc.
+ *
  * @author CroaBeast
  * @since 1.0
  */
-public class AdvancementInfo extends NMSHandler {
+public class AdvancementInfo {
 
     private String title = null, desc = null, frameType = null,
             toChat = null, hidden = null, parent = null;
@@ -23,8 +30,11 @@ public class AdvancementInfo extends NMSHandler {
     private ItemStack item = null;
     private Object rewards = null, criteria = null;
 
+    private static final String COMP_CLASS = "IChatBaseComponent";
+
     /**
      * The basic constructor of the class.
+     *
      * @param adv the required advancement
      */
     public AdvancementInfo(@NotNull Advancement adv) {
@@ -40,8 +50,8 @@ public class AdvancementInfo extends NMSHandler {
         Object title = null, description = null;
         if (rawTitle != null && rawDesc != null) {
             Class<?> chatClass = getVersion() >= 17 ?
-                    getNMSClass("net.minecraft.network.chat", "IChatBaseComponent", false) :
-                    getNMSClass(null, "IChatBaseComponent", true);
+                    getNMSClass("net.minecraft.network.chat", COMP_CLASS, false) :
+                    getNMSClass(null, COMP_CLASS, true);
 
             if (chatClass != null) {
                 String method = getVersion() < 13 ? "toPlainText" : "getString";
@@ -59,13 +69,13 @@ public class AdvancementInfo extends NMSHandler {
 
         Object nmsItemStack = null;
         if (itemField != null) {
-            itemField.setAccessible(true);
             try {
+                itemField.setAccessible(true);
                 nmsItemStack = itemField.get(display);
+                itemField.setAccessible(false);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            itemField.setAccessible(false);
         }
 
         this.title = checkValue(title);
@@ -76,10 +86,11 @@ public class AdvancementInfo extends NMSHandler {
         toChat = checkValue(getObject(display, "i"));
         hidden = checkValue(getObject(display, "j"));
 
+        item = getBukkitItem(nmsItemStack);
         requirements = (String[][]) getObject(nmsAdv, is_19_4() ? "j" : "i");
         rewards = getObject(nmsAdv, is_19_4() ? "e" : "d");
-        item = getBukkitItem(nmsItemStack);
-        criteria = getObject(nmsAdv, is_19_4() ? "g" : "f");
+        criteria = getObject(nmsAdv, is_19_4() ? "g" :
+                (getVersion() < 18 ? "getCriteria" : "f"));
     }
 
     private static boolean is_19_4() {
@@ -87,7 +98,7 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     * Get the advancement type. Can be {@link FrameType#TASK TASK}, {@link FrameType#GOAL GOAL},
+     * Returns the advancement type. Can be {@link FrameType#TASK TASK}, {@link FrameType#GOAL GOAL},
      * {@link FrameType#CHALLENGE CHALLENGE} or {@link FrameType#UNKNOWN UNKNOWN} (if null).
      *
      * @return the type
@@ -98,7 +109,7 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     * Gets the advancement title or main name.
+     * Returns the advancement title or main name.
      *
      * @return the title, can be null
      */
@@ -107,46 +118,44 @@ public class AdvancementInfo extends NMSHandler {
         return title;
     }
 
-    private String removeLiteralChars(String input) {
-        return input.replaceAll("\\\\Q", "").replaceAll("\\\\E", "");
-    }
-
     /**
-     * Gets the description. If null, it will return "No description."
+     * Returns the description. If null, it will return "No description"
      *
      * @return the description
      */
     @NotNull
     public String getDescription() {
-        return desc == null ? "No description." : desc.replaceAll("\\n", " ");
+        return desc == null ? "No description" : desc.replaceAll("\\n", " ");
     }
 
     /**
-     * Gets the description stripped into substrings with the input length.
+     * Returns the description stripped into substrings with the input length.
      *
      * @param length a char length
      * @return the stripped description array
      */
     @NotNull
     public String[] getDescriptionArray(int length) {
-        StringTokenizer tok = new StringTokenizer(getDescription(), " ");
-        StringBuilder output = new StringBuilder(getDescription().length());
+        final String desc = getDescription();
+
+        StringTokenizer tok = new StringTokenizer(desc, " ");
+        StringBuilder output = new StringBuilder(desc.length());
 
         int lineLen = 0;
-        String delimiter = Pattern.quote("\n");
+        final String split = Pattern.quote("\n");
 
         while (tok.hasMoreTokens()) {
             String word = tok.nextToken();
             int i = length - lineLen;
 
             while (word.length() > length) {
-                output.append(word, 0, i).append(delimiter);
+                output.append(word, 0, i).append(split);
                 word = word.substring(i);
                 lineLen = 0;
             }
 
             if (lineLen + word.length() > length) {
-                output.append(delimiter);
+                output.append(split);
                 lineLen = 0;
             }
 
@@ -154,11 +163,13 @@ public class AdvancementInfo extends NMSHandler {
             lineLen += word.length() + 1;
         }
 
-        return removeLiteralChars(output.toString()).split(delimiter);
+        return output.toString().
+                replaceAll("\\\\Q", "").
+                replaceAll("\\\\E", "").split(split);
     }
 
     /**
-     * Gets the name of the parent advancement
+     * Returns the name of the parent advancement
      *
      * @return the parent name
      */
@@ -167,26 +178,30 @@ public class AdvancementInfo extends NMSHandler {
         return parent;
     }
 
+    private static boolean getBool(String string) {
+        return string.matches("(?i)true|false") && string.matches("(?i)true");
+    }
+
     /**
-     * Checks if the advancement can be announced into the chat
+     * Returns if the advancement can be announced into the chat
      *
      * @return can announce to chat
      */
     public boolean announceToChat() {
-        return Boolean.parseBoolean(toChat);
+        return getBool(toChat);
     }
 
     /**
-     * Checks if the advancement is hidden.
+     * Returns if the advancement is hidden.
      *
      * @return is hidden
      */
     public boolean isHidden() {
-        return Boolean.parseBoolean(hidden);
+        return getBool(hidden);
     }
 
     /**
-     * Gets the item that represents the advancement.
+     * Returns the item that represents the advancement.
      *
      * @return the item, can be null
      */
@@ -196,7 +211,7 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     * Gets the rewards object, you should cast it with the NMS AdvancementRewards class.
+     * Returns the rewards object, you should cast it with the AdvancementRewards NMS class.
      *
      * @return the rewards object, can be null
      */
@@ -206,17 +221,19 @@ public class AdvancementInfo extends NMSHandler {
     }
 
     /**
-     * Gets the criteria object. You SHOULD convert this object to a Map<String, Criterion> object.
+     * Returns the criteria map that stores all the criteria of the advancement.
+     * <p> The values should be cast back using the Criteria/Criterion NMS class.
      *
-     * @return the criteria object, can be null
+     * @return the criteria map, will return an empty map if there is no criteria
      */
-    @Nullable
-    public Object getCriteria() {
-        return criteria;
+    @SuppressWarnings("unchecked")
+    @NotNull
+    public Map<String, Object> getCriteria() {
+        return criteria == null ? new HashMap<>() : (Map<String, Object>) criteria;
     }
 
     /**
-     * Get the String matrix object of the requirements.
+     * Returns the String matrix of the requirements.
      *
      * @return requirements, can be null
      */

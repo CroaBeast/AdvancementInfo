@@ -5,24 +5,20 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * The class that handles some NMS/Reflection methods.
- * @author CroaBeast
- * @since 1.0
- */
-abstract class NMSHandler {
+final class NMSHandler {
 
     static double getVersion() {
-        String[] vArray = Bukkit.getVersion().split("[.]");
-        if (vArray.length < 3) return 0.0;
+        Matcher m = Pattern.compile("1\\.(\\d+(\\.\\d+)?)").
+                matcher(Bukkit.getVersion());
+
+        if (!m.find()) return 0.0;
 
         try {
-            int minor = Integer.parseInt(vArray[1]);
-            int patch = Integer.parseInt(vArray[2]);
-            return Double.parseDouble(minor + "." + patch);
-        }
-        catch (Exception e) {
+            return Double.parseDouble(m.group(1));
+        } catch (Exception e) {
             return 0.0;
         }
     }

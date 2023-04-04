@@ -1,9 +1,8 @@
 package me.croabeast.advancementinfo;
 
-import com.google.common.collect.Sets;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Set;
+import java.util.Locale;
 
 /**
  * The enum class for the frame types.
@@ -29,17 +28,12 @@ enum FrameType {
     CHALLENGE;
 
     /**
-     * All the enum values in a HashSet.
-     */
-    static final Set<FrameType> VALUES = Sets.newHashSet(values());
-
-    /**
      * Parses the enum to its simple name in lowercase.
      * @return the enum name
      */
     @Override
     public String toString() {
-        return name().toLowerCase();
+        return name().toLowerCase(Locale.ENGLISH);
     }
 
     /**
@@ -49,9 +43,10 @@ enum FrameType {
      */
     static FrameType getFrameType(@Nullable String name) {
         if (name == null) return UNKNOWN;
-        for (FrameType type : VALUES) {
+
+        for (FrameType type : values())
             if (name.toLowerCase().equals(type + "")) return type;
-        }
+
         return UNKNOWN;
     }
 }
