@@ -22,10 +22,12 @@ import static me.croabeast.advancementinfo.NMSHandler.*;
  */
 public class AdvancementInfo {
 
+    private final Advancement adv;
+
     private String title = null, desc = null, frameType = null,
             toChat = null, hidden = null, parent = null;
 
-    private String[][] requirements = null;
+    private Object requirements = null;
 
     private ItemStack item = null;
     private Object rewards = null, criteria = null;
@@ -38,6 +40,8 @@ public class AdvancementInfo {
      * @param adv the required advancement
      */
     public AdvancementInfo(@NotNull Advancement adv) {
+        this.adv = adv;
+
         Class<?> craftClass = getBukkitClass("advancement.CraftAdvancement");
         if (craftClass == null) return;
 
@@ -87,7 +91,7 @@ public class AdvancementInfo {
         hidden = checkValue(getObject(display, "j"));
 
         item = getBukkitItem(nmsItemStack);
-        requirements = (String[][]) getObject(nmsAdv, is_19_4() ? "j" : "i");
+        requirements = getObject(nmsAdv, is_19_4() ? "j" : "i");
         rewards = getObject(nmsAdv, is_19_4() ? "e" : "d");
         criteria = getObject(nmsAdv, is_19_4() ? "g" :
                 (getVersion() < 18 ? "getCriteria" : "f"));
@@ -95,6 +99,11 @@ public class AdvancementInfo {
 
     private static boolean is_19_4() {
         return getVersion() >= 19.4;
+    }
+
+    @NotNull
+    public Advancement getBukkit() {
+        return adv;
     }
 
     /**
@@ -164,8 +173,8 @@ public class AdvancementInfo {
         }
 
         return output.toString().
-                replaceAll("\\\\Q", "").
-                replaceAll("\\\\E", "").split(split);
+                replaceAll("\\\\Q|\\\\E", "").
+                split(split);
     }
 
     /**
@@ -229,7 +238,11 @@ public class AdvancementInfo {
     @SuppressWarnings("unchecked")
     @NotNull
     public Map<String, Object> getCriteria() {
-        return criteria == null ? new HashMap<>() : (Map<String, Object>) criteria;
+        try {
+            return criteria == null ? new HashMap<>() : (Map<String, Object>) criteria;
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
     }
 
     /**
@@ -239,6 +252,10 @@ public class AdvancementInfo {
      */
     @Nullable
     public String[][] getRequirements() {
-        return requirements;
+        try {
+            return (String[][]) requirements;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
