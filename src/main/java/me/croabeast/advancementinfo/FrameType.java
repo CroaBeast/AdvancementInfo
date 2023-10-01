@@ -1,5 +1,6 @@
 package me.croabeast.advancementinfo;
 
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
@@ -42,7 +43,7 @@ enum FrameType {
      * @return the respective frame type
      */
     static FrameType getFrameType(@Nullable String name) {
-        if (name == null) return UNKNOWN;
+        if (StringUtils.isEmpty(name)) return UNKNOWN;
 
         for (FrameType type : values())
             if (name.toLowerCase().equals(type + "")) return type;

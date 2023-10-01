@@ -1,5 +1,6 @@
 package me.croabeast.advancementinfo;
 
+import org.apache.commons.lang.WordUtils;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -8,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
@@ -24,13 +26,10 @@ public class AdvancementInfo {
 
     private final Advancement adv;
 
-    private String title = null, desc = null, frameType = null,
-            toChat = null, hidden = null, parent = null;
+    private final String title, desc, frameType, toChat, hidden, parent;
+    private final ItemStack item;
 
-    private Object requirements = null;
-
-    private ItemStack item = null;
-    private Object rewards = null, criteria = null;
+    private final Object rewards, criteria, requirements;
 
     private static final String COMP_CLASS = "IChatBaseComponent";
 
@@ -38,16 +37,26 @@ public class AdvancementInfo {
      * The basic constructor of the class.
      *
      * @param adv the required advancement
+     * @throws IllegalStateException if it fields to catch the values
      */
-    public AdvancementInfo(@NotNull Advancement adv) {
+    public AdvancementInfo(@NotNull Advancement adv) throws IllegalStateException {
         this.adv = adv;
 
         Class<?> craftClass = getBukkitClass("advancement.CraftAdvancement");
-        if (craftClass == null) return;
+        if (craftClass == null)
+            throw new IllegalStateException();
 
         Object nmsAdv = getObject(craftClass, craftClass.cast(adv), "getHandle");
+        if (is_20_2()) nmsAdv = getObject(nmsAdv, "b");
+
         Object display = getObject(nmsAdv, is_19_4() ? "d" : "c");
-        if (display == null) return;
+        if (display == null)
+            throw new IllegalStateException();
+
+        if (is_20_2()) {
+            Optional<?> o = ((Optional<?>) display);
+            if (o.isPresent()) display = o.get();
+        }
 
         Object rawTitle = getObject(display, "a"), rawDesc = getObject(display, "b");
 
@@ -101,6 +110,10 @@ public class AdvancementInfo {
         return getVersion() >= 19.4;
     }
 
+    private static boolean is_20_2() {
+        return getVersion() >= 20.2;
+    }
+
     @NotNull
     public Advancement getBukkit() {
         return adv;
@@ -122,8 +135,17 @@ public class AdvancementInfo {
      *
      * @return the title, can be null
      */
-    @Nullable
+    @NotNull
     public String getTitle() {
+        if (title == null) {
+            String key = adv.getKey().toString();
+
+            key = key.substring(key.lastIndexOf('/') + 1);
+            key = key.replace('_', ' ');
+
+            return WordUtils.capitalizeFully(key);
+        }
+
         return title;
     }
 
@@ -172,9 +194,8 @@ public class AdvancementInfo {
             lineLen += word.length() + 1;
         }
 
-        return output.toString().
-                replaceAll("\\\\Q|\\\\E", "").
-                split(split);
+        return output.toString()
+                .replaceAll("\\\\Q|\\\\E", "").split(split);
     }
 
     /**
@@ -257,5 +278,10 @@ public class AdvancementInfo {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "AdvancementInfo{title='" + title + "', frameType='" + frameType + "'}";
     }
 }

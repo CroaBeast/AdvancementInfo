@@ -37,7 +37,6 @@ final class NMSHandler {
         }
     }
 
-    @Nullable
     static Class<?> getBukkitClass(String name) {
         return getNMSClass("org.bukkit.craftbukkit", name, true);
     }
