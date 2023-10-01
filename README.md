@@ -1,11 +1,11 @@
-# AdvancementInfo [1.12 - 1.18]
+# AdvancementInfo [1.12 - 1.20]
 
-This class will help you to get the title, the description and the frame type of advancement.
+This class will help you to get the title, the description, and the frame type of advancement.
 If you are using PaperMC as the base of your project, use its method instead of this.
 
 # How to use it in your project?
 	
-1. Add this class into your project copying it or add it via Maven or Gradle.
+1. Add this class to your project by copying it or adding it via Maven or Gradle.
 2. Call a new instance for it:
 ```
 Advancement adv = Bukkit.getAdvancement(key);
