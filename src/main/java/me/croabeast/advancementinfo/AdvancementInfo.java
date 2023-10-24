@@ -1,176 +1,215 @@
 package me.croabeast.advancementinfo;
 
+import lombok.Getter;
 import org.apache.commons.lang.WordUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static me.croabeast.advancementinfo.NMSHandler.*;
-
-/**
- * The <code>AdvancementInfo</code> class manages all the NMS objects of an advancement,
- * like its title, description, frame type, etc.
- *
- * @author CroaBeast
- * @since 1.0
- */
+@Getter
 public class AdvancementInfo {
 
-    private final Advancement adv;
+    private static final double MC_VERSION = ((Function<String, Double>) s -> {
+        Matcher m = Pattern
+                .compile("1\\.(\\d+(\\.\\d+)?)")
+                .matcher(s);
 
-    private final String title, desc, frameType, toChat, hidden, parent;
+        if (!m.find()) return 0.0;
+
+        try {
+            return Double.parseDouble(m.group(1));
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }).apply(Bukkit.getVersion());
+
+    private static final boolean IS_20_2 = MC_VERSION >= 20.2, IS_19_4 = MC_VERSION >= 19.4;
+
+    private final Advancement bukkit;
+
+    private final String title;
+    private final String description;
+
+    private final FrameType frame;
+
+    private final boolean announcedToChat;
+    private final boolean hidden;
+
+    private final String parent;
+
     private final ItemStack item;
 
-    private final Object rewards, criteria, requirements;
+    private final Object rewards;
+    private final Map<String, Object> criteria;
+    private final String[][] requirements;
 
-    private static final String COMP_CLASS = "IChatBaseComponent";
+    @Nullable
+    private static Class<?> getNMSClass(String pack, String name, boolean useVs) {
+        Package aPackage = Bukkit.getServer().getClass().getPackage();
 
-    /**
-     * The basic constructor of the class.
-     *
-     * @param adv the required advancement
-     * @throws IllegalStateException if it fields to catch the values
-     */
-    public AdvancementInfo(@NotNull Advancement adv) throws IllegalStateException {
-        this.adv = adv;
+        String version = aPackage.getName().split("\\.")[3];
+        pack = pack != null ? pack : "net.minecraft.server";
 
-        Class<?> craftClass = getBukkitClass("advancement.CraftAdvancement");
-        if (craftClass == null)
+        try {
+            return Class.forName(pack + (useVs ? "." + version : "") + "." + name);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Class<?> getBukkitClass(String name) {
+        return getNMSClass("org.bukkit.craftbukkit", name, true);
+    }
+
+    @Nullable
+    private static Object getObject(@Nullable Class<?> clazz, Object initial, String method) {
+        if (initial == null) return null;
+
+        try {
+            clazz = clazz != null ? clazz : initial.getClass();
+            return clazz.getDeclaredMethod(method).invoke(initial);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static Object getObject(Object initial, String method, String... args) {
+        Object obj = getObject(null, initial, method);
+
+        if (args == null || args.length == 0) return obj;
+        for (String arg : args)
+            obj = getObject(obj, arg);
+
+        return obj;
+    }
+
+    private static String getTitleOrDescription(Object object) {
+        if (object == null) return null;
+
+        Class<?> chat = getNMSClass(
+                MC_VERSION >= 17.0 ? "net.minecraft.network.chat" : null,
+                "IChatBaseComponent", MC_VERSION < 17.0
+        );
+
+        if (chat == null) return null;
+
+        String method = MC_VERSION < 13.0 ? "toPlainText" : "getString";
+        return String.valueOf(getObject(chat, object, method));
+    }
+
+    private static boolean bool(String string) {
+        return string.matches("(?i)true|false") && string.matches("(?i)true");
+    }
+
+    private static final Function<Object, ItemStack> ITEM_FUNCTION = o -> {
+        Field itemField = null;
+        try {
+            itemField = o.getClass().getDeclaredField("c");
+        } catch (Exception ignored) {}
+
+        Object nmsItem = null;
+        if (itemField != null) {
+            try {
+                itemField.setAccessible(true);
+                nmsItem = itemField.get(o);
+                itemField.setAccessible(false);
+            }
+            catch (Exception ignored) {}
+        }
+
+        if (nmsItem == null) return null;
+
+        Class<?> clazz = getBukkitClass("inventory.CraftItemStack");
+        if (clazz == null) return null;
+
+        Constructor<?> ct;
+        try {
+            ct = clazz.getDeclaredConstructor(nmsItem.getClass());
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+
+        ct.setAccessible(true);
+        try {
+            return (ItemStack) ct.newInstance(nmsItem);
+        } catch (Exception e) {
+            return null;
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    public AdvancementInfo(Advancement adv) {
+        Class<?> craft = getBukkitClass("advancement.CraftAdvancement");
+        if (craft == null)
             throw new IllegalStateException();
 
-        Object nmsAdv = getObject(craftClass, craftClass.cast(adv), "getHandle");
-        if (is_20_2()) nmsAdv = getObject(nmsAdv, "b");
+        this.bukkit = Objects.requireNonNull(adv);
 
-        Object display = getObject(nmsAdv, is_19_4() ? "d" : "c");
+        Object nmsAd = getObject(craft, craft.cast(adv), "getHandle");
+        if (IS_20_2) nmsAd = getObject(nmsAd, "b");
+
+        Object display = getObject(nmsAd, IS_19_4 ? "d" : "c");
         if (display == null)
             throw new IllegalStateException();
 
-        if (is_20_2()) {
+        if (IS_20_2) {
             Optional<?> o = ((Optional<?>) display);
             if (o.isPresent()) display = o.get();
         }
 
-        Object rawTitle = getObject(display, "a"), rawDesc = getObject(display, "b");
-
-        Object title = null, description = null;
-        if (rawTitle != null && rawDesc != null) {
-            Class<?> chatClass = getVersion() >= 17 ?
-                    getNMSClass("net.minecraft.network.chat", COMP_CLASS, false) :
-                    getNMSClass(null, COMP_CLASS, true);
-
-            if (chatClass != null) {
-                String method = getVersion() < 13 ? "toPlainText" : "getString";
-                title = getObject(chatClass, rawTitle, method);
-                description = getObject(chatClass, rawDesc, method);
-            }
-        }
-
-        Field itemField = null;
-        try {
-            itemField = display.getClass().getDeclaredField("c");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        Object nmsItemStack = null;
-        if (itemField != null) {
-            try {
-                itemField.setAccessible(true);
-                nmsItemStack = itemField.get(display);
-                itemField.setAccessible(false);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        this.title = checkValue(title);
-        desc = checkValue(description);
-        frameType = checkValue(getObject(display, "e"), "PROGRESS");
-
-        parent = checkValue(getObject(nmsAdv, "b", "getName"), "null");
-        toChat = checkValue(getObject(display, "i"));
-        hidden = checkValue(getObject(display, "j"));
-
-        item = getBukkitItem(nmsItemStack);
-        requirements = getObject(nmsAdv, is_19_4() ? "j" : "i");
-        rewards = getObject(nmsAdv, is_19_4() ? "e" : "d");
-        criteria = getObject(nmsAdv, is_19_4() ? "g" :
-                (getVersion() < 18 ? "getCriteria" : "f"));
-    }
-
-    private static boolean is_19_4() {
-        return getVersion() >= 19.4;
-    }
-
-    private static boolean is_20_2() {
-        return getVersion() >= 20.2;
-    }
-
-    @NotNull
-    public Advancement getBukkit() {
-        return adv;
-    }
-
-    /**
-     * Returns the advancement type. Can be {@link FrameType#TASK TASK}, {@link FrameType#GOAL GOAL},
-     * {@link FrameType#CHALLENGE CHALLENGE} or {@link FrameType#UNKNOWN UNKNOWN} (if null).
-     *
-     * @return the type
-     */
-    @NotNull
-    public String getFrameType() {
-        return FrameType.getFrameType(frameType) + "";
-    }
-
-    /**
-     * Returns the advancement title or main name.
-     *
-     * @return the title, can be null
-     */
-    @NotNull
-    public String getTitle() {
+         String title = getTitleOrDescription(getObject(display, "a"));
         if (title == null) {
             String key = adv.getKey().toString();
 
             key = key.substring(key.lastIndexOf('/') + 1);
             key = key.replace('_', ' ');
 
-            return WordUtils.capitalizeFully(key);
+            title = WordUtils.capitalizeFully(key);
         }
 
-        return title;
+        this.title = title;
+
+        String desc = getTitleOrDescription(getObject(display, "b"));
+        description = desc == null ?
+                "No description" : desc.replaceAll('\\' + "n", " ");
+
+        Object f = getObject(display, "e");
+        frame = FrameType.getFrameType(String.valueOf(f));
+
+        announcedToChat = bool(String.valueOf(getObject(display, "i")));
+        hidden = bool(String.valueOf(getObject(display, "j")));
+
+        parent = String.valueOf(getObject(nmsAd, "b", "getName"));
+        item = ITEM_FUNCTION.apply(display);
+
+        rewards = getObject(nmsAd, IS_19_4 ? "e" : "d");
+
+        String criteriaName = MC_VERSION < 18.0 ? "getCriteria" : "f";
+        Object criteria = getObject(nmsAd, IS_19_4 ? "g" : criteriaName);
+
+        this.criteria = criteria == null ?
+                new HashMap<>() : (Map<String, Object>) criteria;
+
+        Object req = getObject(nmsAd, IS_19_4 ? "j" : "i");
+        this.requirements = req == null ? null : (String[][]) req;
     }
 
-    /**
-     * Returns the description. If null, it will return "No description"
-     *
-     * @return the description
-     */
-    @NotNull
-    public String getDescription() {
-        return desc == null ? "No description" : desc.replaceAll("\\n", " ");
-    }
-
-    /**
-     * Returns the description stripped into substrings with the input length.
-     *
-     * @param length a char length
-     * @return the stripped description array
-     */
     @NotNull
     public String[] getDescriptionArray(int length) {
         final String desc = getDescription();
 
         StringTokenizer tok = new StringTokenizer(desc, " ");
-        StringBuilder output = new StringBuilder(desc.length());
+        StringBuilder out = new StringBuilder(desc.length());
 
         int lineLen = 0;
         final String split = Pattern.quote("\n");
@@ -180,108 +219,26 @@ public class AdvancementInfo {
             int i = length - lineLen;
 
             while (word.length() > length) {
-                output.append(word, 0, i).append(split);
+                out.append(word, 0, i).append(split);
                 word = word.substring(i);
                 lineLen = 0;
             }
 
             if (lineLen + word.length() > length) {
-                output.append(split);
+                out.append(split);
                 lineLen = 0;
             }
 
-            output.append(word).append(" ");
+            out.append(word).append(" ");
             lineLen += word.length() + 1;
         }
 
-        return output.toString()
-                .replaceAll("\\\\Q|\\\\E", "").split(split);
-    }
-
-    /**
-     * Returns the name of the parent advancement
-     *
-     * @return the parent name
-     */
-    @NotNull
-    public String getParent() {
-        return parent;
-    }
-
-    private static boolean getBool(String string) {
-        return string.matches("(?i)true|false") && string.matches("(?i)true");
-    }
-
-    /**
-     * Returns if the advancement can be announced into the chat
-     *
-     * @return can announce to chat
-     */
-    public boolean announceToChat() {
-        return getBool(toChat);
-    }
-
-    /**
-     * Returns if the advancement is hidden.
-     *
-     * @return is hidden
-     */
-    public boolean isHidden() {
-        return getBool(hidden);
-    }
-
-    /**
-     * Returns the item that represents the advancement.
-     *
-     * @return the item, can be null
-     */
-    @Nullable
-    public ItemStack getItem() {
-        return item;
-    }
-
-    /**
-     * Returns the rewards object, you should cast it with the AdvancementRewards NMS class.
-     *
-     * @return the rewards object, can be null
-     */
-    @Nullable
-    public Object getRewards() {
-        return rewards;
-    }
-
-    /**
-     * Returns the criteria map that stores all the criteria of the advancement.
-     * <p> The values should be cast back using the Criteria/Criterion NMS class.
-     *
-     * @return the criteria map, will return an empty map if there is no criteria
-     */
-    @SuppressWarnings("unchecked")
-    @NotNull
-    public Map<String, Object> getCriteria() {
-        try {
-            return criteria == null ? new HashMap<>() : (Map<String, Object>) criteria;
-        } catch (Exception e) {
-            return new HashMap<>();
-        }
-    }
-
-    /**
-     * Returns the String matrix of the requirements.
-     *
-     * @return requirements, can be null
-     */
-    @Nullable
-    public String[][] getRequirements() {
-        try {
-            return (String[][]) requirements;
-        } catch (Exception e) {
-            return null;
-        }
+        return out.toString()
+                .replaceAll("\\\\[QE]", "").split(split);
     }
 
     @Override
     public String toString() {
-        return "AdvancementInfo{title='" + title + "', frameType='" + frameType + "'}";
+        return "AdvancementInfo{title='" + title + "', frameType='" + frame + "'}";
     }
 }
