@@ -15,6 +15,12 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * A class that represents the information of an advancement in Minecraft.
+ *
+ * <p> It uses reflection to access the internal fields and methods of the
+ * Bukkit and NMS classes.
+ */
 @Getter
 public class AdvancementInfo {
 
@@ -147,6 +153,12 @@ public class AdvancementInfo {
         }
     };
 
+    /**
+     * Constructs an AdvancementInfo object from a Bukkit advancement object.
+     *
+     * @param adv The Bukkit advancement object.
+     * @throws IllegalStateException If the Bukkit or NMS classes are not found or accessible.
+     */
     @SuppressWarnings("unchecked")
     public AdvancementInfo(Advancement adv) {
         Class<?> craft = getBukkitClass("advancement.CraftAdvancement");
@@ -204,6 +216,13 @@ public class AdvancementInfo {
         this.requirements = req == null ? null : (String[][]) req;
     }
 
+    /**
+     * Gets the description of the advancement as an array of strings with a
+     * maximum length per line.
+     *
+     * @param length The maximum length of each line.
+     * @return The description array.
+     */
     @NotNull
     public String[] getDescriptionArray(int length) {
         final String desc = getDescription();
