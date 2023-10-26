@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 @Getter
 public class AdvancementInfo {
 
-    private static final double MC_VERSION = ((Function<String, Double>) s -> {
+    private static final double MC_VS = ((Function<String, Double>) s -> {
         Matcher m = Pattern
                 .compile("1\\.(\\d+(\\.\\d+)?)")
                 .matcher(s);
@@ -38,7 +38,7 @@ public class AdvancementInfo {
         }
     }).apply(Bukkit.getVersion());
 
-    private static final boolean IS_20_2 = MC_VERSION >= 20.2, IS_19_4 = MC_VERSION >= 19.4;
+    private static final boolean IS_20_2 = MC_VS >= 20.2, IS_19_4 = MC_VS >= 19.4;
 
     private final Advancement bukkit;
 
@@ -103,13 +103,13 @@ public class AdvancementInfo {
         if (object == null) return null;
 
         Class<?> chat = getNMSClass(
-                MC_VERSION >= 17.0 ? "net.minecraft.network.chat" : null,
-                "IChatBaseComponent", MC_VERSION < 17.0
+                MC_VS >= 17.0 ? "net.minecraft.network.chat" : null,
+                "IChatBaseComponent", MC_VS < 17.0
         );
 
         if (chat == null) return null;
 
-        String method = MC_VERSION < 13.0 ? "toPlainText" : "getString";
+        String method = MC_VS < 13.0 ? "toPlainText" : "getString";
         return String.valueOf(getObject(chat, object, method));
     }
 
@@ -206,8 +206,22 @@ public class AdvancementInfo {
 
         rewards = getObject(nmsAd, IS_19_4 ? "e" : "d");
 
-        String criteriaName = MC_VERSION < 18.0 ? "getCriteria" : "f";
-        Object criteria = getObject(nmsAd, IS_19_4 ? "g" : criteriaName);
+        String name = "";
+
+        if (MC_VS <= 17.1 || MC_VS == 19.2) {
+            name = "getCriteria";
+        } else if (
+                (MC_VS >= 18.0 && MC_VS <= 19.1) ||
+                        MC_VS == 19.3 || MC_VS >= 20.2
+        ) {
+            name = "f";
+        } else if (MC_VS == 19.4) {
+            name = "g";
+        } else if (MC_VS == 20.0 || MC_VS == 20.1) {
+            name = "h";
+        }
+
+        Object criteria = getObject(nmsAd, name);
 
         this.criteria = criteria == null ?
                 new HashMap<>() : (Map<String, Object>) criteria;
