@@ -4,31 +4,34 @@ import lombok.Getter;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A class that represents the information of an advancement in Minecraft.
+ * This class encapsulates detailed information about a Bukkit advancement in Minecraft.
+ * It provides various properties such as the title, description, icon, criteria, rewards, etc.,
+ * making it easier to interact with and manipulate advancement data programmatically.
  *
- * <p> It uses reflection to access the internal fields and methods of the
- * Bukkit and NMS classes.
+ * <p> The AdvancementInfo class acts as a bridge between the Bukkit API and the underlying
+ * Minecraft advancement system, offering developers a more convenient and intuitive way
+ * to access and manage advancement-related information.
  */
+@SuppressWarnings("unchecked")
 @Getter
 public class AdvancementInfo {
 
     private static final double MC_VS = ((Function<String, Double>) s -> {
-        Matcher m = Pattern
-                .compile("1\\.(\\d+(\\.\\d+)?)")
-                .matcher(s);
-
+        Matcher m = Pattern.compile("1\\.(\\d+(\\.\\d+)?)").matcher(s);
         if (!m.find()) return 0.0;
 
         try {
@@ -38,104 +41,96 @@ public class AdvancementInfo {
         }
     }).apply(Bukkit.getVersion());
 
-    private static final boolean IS_20_2 = MC_VS >= 20.2, IS_19_4 = MC_VS >= 19.4;
-
-    private final Advancement bukkit;
-
-    private final String title;
-    private final String description;
-
-    private final FrameType frame;
-
-    private final boolean announcedToChat;
-    private final boolean hidden;
-
-    private final String parent;
-
-    private final ItemStack item;
-
-    private final Object rewards;
-    private final Map<String, Object> criteria;
-    private final String[][] requirements;
-
-    @Nullable
-    private static Class<?> getNMSClass(String pack, String name, boolean useVs) {
-        Package aPackage = Bukkit.getServer().getClass().getPackage();
-
-        String version = aPackage.getName().split("\\.")[3];
-        pack = pack != null ? pack : "net.minecraft.server";
-
+    private static Class<?> from(String name) {
         try {
-            return Class.forName(pack + (useVs ? "." + version : "") + "." + name);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static Class<?> getBukkitClass(String name) {
-        return getNMSClass("org.bukkit.craftbukkit", name, true);
-    }
-
-    @Nullable
-    private static Object getObject(@Nullable Class<?> clazz, Object initial, String method) {
-        if (initial == null) return null;
-
-        try {
-            clazz = clazz != null ? clazz : initial.getClass();
-            return clazz.getDeclaredMethod(method).invoke(initial);
+            return Class.forName(name);
         } catch (Exception e) {
             return null;
         }
     }
 
     @Nullable
-    private static Object getObject(Object initial, String method, String... args) {
-        Object obj = getObject(null, initial, method);
-
-        if (args == null || args.length == 0) return obj;
-        for (String arg : args)
-            obj = getObject(obj, arg);
-
-        return obj;
-    }
-
-    private static String getTitleOrDescription(Object object) {
-        if (object == null) return null;
-
-        Class<?> chat = getNMSClass(
-                MC_VS >= 17.0 ? "net.minecraft.network.chat" : null,
-                "IChatBaseComponent", MC_VS < 17.0
+    private static Class<?> getNmsClass(String pack, String name) {
+        return from(
+                (pack != null ? pack : "net.minecraft.server") +
+                        "." +
+                        Bukkit.getServer().getClass()
+                                .getPackage()
+                                .getName().split("\\.")[3] +
+                        "." + name
         );
-
-        if (chat == null) return null;
-
-        String method = MC_VS < 13.0 ? "toPlainText" : "getString";
-        return String.valueOf(getObject(chat, object, method));
     }
 
-    private static boolean bool(String string) {
-        return string.matches("(?i)true|false") && string.matches("(?i)true");
+    @Nullable
+    private static Class<?> getNmsClass(String name) {
+        return getNmsClass(null, name);
     }
 
-    private static final Function<Object, ItemStack> ITEM_FUNCTION = o -> {
-        Field itemField = null;
+    private static Object getHandle(Advancement advancement) {
+        String name = "advancement.CraftAdvancement";
+
+        Class<?> craft = getNmsClass("org.bukkit.craftbukkit", name);
+        if (craft == null) throw new NullPointerException();
+
         try {
-            itemField = o.getClass().getDeclaredField("c");
-        } catch (Exception ignored) {}
-
-        Object nmsItem = null;
-        if (itemField != null) {
-            try {
-                itemField.setAccessible(true);
-                nmsItem = itemField.get(o);
-                itemField.setAccessible(false);
-            }
-            catch (Exception ignored) {}
+            Method method = craft.getMethod("getHandle");
+            return method.invoke(craft.cast(advancement));
+        } catch (Exception e) {
+            throw new NullPointerException(e.getLocalizedMessage());
         }
+    }
 
+    private static Field getField(Object o, String name) {
+        try {
+            return o.getClass().getDeclaredField(name);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static <T> T fromField(Field field, Object initial, Class<T> clazz, T def) {
+        if (field == null) return def;
+
+        try {
+            if (!field.isAccessible()) field.setAccessible(true);
+            return clazz.cast(field.get(initial));
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private static <T> T fromField(String field, Object initial, T def) {
+        return fromField(getField(initial, field), initial, (Class<T>) def.getClass(), def);
+    }
+
+    private static Object fromField(String field, Object initial) {
+        return fromField(getField(initial, field), initial, Object.class, null);
+    }
+
+    private static String fromChatComponent(Object display, String field, String def) {
+        Object object = fromField(field, display);
+        if (object == null) return def;
+
+        Class<?> chat = MC_VS >= 17.0 ?
+                from("net.minecraft.network.chat.IChatBaseComponent") :
+                getNmsClass("IChatBaseComponent");
+
+        if (chat == null) return def;
+
+        String methodName = MC_VS < 13.0 ? "toPlainText" : "getString";
+
+        try {
+            return chat.getMethod(methodName).invoke(object).toString();
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private static final Function<Object, ItemStack> ITEM_FUNCTION = display -> {
+        Object nmsItem = fromField("c", display);
         if (nmsItem == null) return null;
 
-        Class<?> clazz = getBukkitClass("inventory.CraftItemStack");
+        Class<?> clazz = getNmsClass("org.bukkit.craftbukkit", "inventory.CraftItemStack");
         if (clazz == null) return null;
 
         Constructor<?> ct;
@@ -154,80 +149,178 @@ public class AdvancementInfo {
     };
 
     /**
-     * Constructs an AdvancementInfo object from a Bukkit advancement object.
-     *
-     * @param adv The Bukkit advancement object.
-     * @throws IllegalStateException If the Bukkit or NMS classes are not found or accessible.
+     * The Bukkit advancement object.
      */
-    @SuppressWarnings("unchecked")
-    public AdvancementInfo(Advancement adv) {
-        Class<?> craft = getBukkitClass("advancement.CraftAdvancement");
-        if (craft == null)
-            throw new IllegalStateException();
+    @NotNull
+    private final Advancement bukkit;
 
-        this.bukkit = Objects.requireNonNull(adv);
+    /**
+     * The title of the advancement.
+     */
+    @NotNull
+    private final String title;
 
-        Object nmsAd = getObject(craft, craft.cast(adv), "getHandle");
-        if (IS_20_2) nmsAd = getObject(nmsAd, "b");
+    /**
+     * The description of the advancement.
+     */
+    @NotNull
+    private final String description;
 
-        Object display = getObject(nmsAd, IS_19_4 ? "d" : "c");
-        if (display == null)
-            throw new IllegalStateException();
+    /**
+     * The icon associated with the advancement.
+     */
+    @Nullable
+    private final ItemStack icon;
 
-        if (IS_20_2) {
-            Optional<?> o = ((Optional<?>) display);
-            if (o.isPresent()) display = o.get();
+    /**
+     * Indicates whether to show a toast when the advancement is achieved.
+     */
+    private final boolean showToast;
+
+    /**
+     * Indicates whether to announce in chat when the advancement is achieved.
+     */
+    private final boolean announceChat;
+
+    /**
+     * Indicates whether the advancement is hidden.
+     */
+    private final boolean hidden;
+
+    /**
+     * The X-coordinate of the advancement on the advancement screen.
+     */
+    private final float x;
+
+    /**
+     * The Y-coordinate of the advancement on the advancement screen.
+     */
+    private final float y;
+
+    /**
+     * The type of advancement frame.
+     */
+    @NotNull
+    private final FrameType type;
+
+    /**
+     * Criteria required to achieve the advancement.
+     */
+    @NotNull
+    private final Map<String, Object> criteria;
+
+    /**
+     * Rewards granted upon achieving the advancement.
+     */
+    @Nullable
+    private final Object rewards;
+
+    /**
+     * Requirements for the advancement.
+     */
+    @Nullable
+    private final String[][] requirements;
+
+    /**
+     * Constructs an AdvancementInfo object from a Bukkit advancement.
+     *
+     * @param advancement The Bukkit advancement object.
+     */
+    public AdvancementInfo(Advancement advancement) {
+        this.bukkit = Objects.requireNonNull(advancement);
+
+        Object handle = getHandle(advancement);
+
+        Field criteriaField = null;
+        Field rField = null;
+        Field rewardsField = null;
+
+        Field[] handleFields = handle.getClass().getDeclaredFields();
+
+        Class<?> rewardsClass = MC_VS >= 17.0 ?
+                from("net.minecraft.advancements.AdvancementRewards") :
+                getNmsClass("AdvancementRewards");
+
+        for (Field field : handleFields) {
+            final Class<?> fieldClass = field.getType();
+
+            if (fieldClass == String[][].class) {
+                rField = field;
+                continue;
+            }
+
+            if (fieldClass == Map.class) {
+                criteriaField = field;
+                continue;
+            }
+
+            if (fieldClass == rewardsClass) rewardsField = field;
         }
 
-         String title = getTitleOrDescription(getObject(display, "a"));
-        if (title == null) {
-            String key = adv.getKey().toString();
+        this.criteria = (Map<String, Object>)
+                fromField(criteriaField, handle, Map.class, new HashMap<>());
 
-            key = key.substring(key.lastIndexOf('/') + 1);
-            key = key.replace('_', ' ');
+        this.rewards = fromField(rewardsField, handle, Object.class, null);
+        this.requirements = fromField(rField, handle, String[][].class, null);
 
-            title = WordUtils.capitalizeFully(key);
+        if (MC_VS >= 18.0) {
+            AdvancementDisplay parent = advancement.getDisplay();
+
+            if (parent != null) {
+                this.title = parent.getTitle();
+                this.description = parent.getDescription();
+
+                this.icon = parent.getIcon();
+
+                this.showToast = parent.shouldShowToast();
+                this.announceChat = parent.shouldAnnounceChat();
+                this.hidden = parent.isHidden();
+
+                this.x = parent.getX();
+                this.y = parent.getY();
+
+                this.type = FrameType.getFrameType(parent.getType().name());
+                return;
+            }
         }
 
-        this.title = title;
+        Class<?> displayClass = MC_VS >= 17.0 ?
+                from("net.minecraft.advancements.AdvancementDisplay") :
+                getNmsClass("AdvancementDisplay");
 
-        String desc = getTitleOrDescription(getObject(display, "b"));
-        description = desc == null ?
-                "No description" : desc.replaceAll('\\' + "n", " ");
+        Object display = null;
 
-        Object f = getObject(display, "e");
-        frame = FrameType.getFrameType(String.valueOf(f));
+        for (Field field : handleFields) {
+            if (field.getType() != displayClass)
+                continue;
 
-        announcedToChat = bool(String.valueOf(getObject(display, "i")));
-        hidden = bool(String.valueOf(getObject(display, "j")));
-
-        parent = String.valueOf(getObject(nmsAd, "b", "getName"));
-        item = ITEM_FUNCTION.apply(display);
-
-        rewards = getObject(nmsAd, IS_19_4 ? "e" : "d");
-
-        String name = "";
-
-        if (MC_VS <= 17.1 || MC_VS == 19.2) {
-            name = "getCriteria";
-        } else if (
-                (MC_VS >= 18.0 && MC_VS <= 19.1) ||
-                        MC_VS == 19.3 || MC_VS >= 20.2
-        ) {
-            name = "f";
-        } else if (MC_VS == 19.4) {
-            name = "g";
-        } else if (MC_VS == 20.0 || MC_VS == 20.1) {
-            name = "h";
+            display = fromField(field, handle, Object.class, null);
+            break;
         }
 
-        Object criteria = getObject(nmsAd, name);
+        Objects.requireNonNull(display);
 
-        this.criteria = criteria == null ?
-                new HashMap<>() : (Map<String, Object>) criteria;
+        String key = bukkit.getKey().toString();
 
-        Object req = getObject(nmsAd, IS_19_4 ? "j" : "i");
-        this.requirements = req == null ? null : (String[][]) req;
+        key = key.substring(key.lastIndexOf('/') + 1);
+        key = key.replace('_', ' ');
+        key = WordUtils.capitalizeFully(key);
+
+        this.title = fromChatComponent(display, "a", key);
+
+        String d = fromChatComponent(display, "b", "No description.");
+        this.description = d.replaceAll('\\' + "n", " ");
+
+        this.icon = ITEM_FUNCTION.apply(display);
+
+        this.showToast = fromField("f", display, true);
+        this.announceChat = fromField("g", display, true);
+        this.hidden = fromField("g", display, false);
+
+        this.x = fromField("i", display, 0F);
+        this.y = fromField("j", display, 0F);
+
+        this.type = FrameType.getFrameType(fromField("e", display).toString());
     }
 
     /**
@@ -272,6 +365,6 @@ public class AdvancementInfo {
 
     @Override
     public String toString() {
-        return "AdvancementInfo{title='" + title + "', frameType='" + frame + "'}";
+        return "AdvancementInfo{title='" + title + "', frameType='" + type + "'}";
     }
 }

@@ -5,24 +5,40 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
+/**
+ * An enum representing different types of advancement frames.
+ */
 public enum FrameType {
+    /**
+     * Unknown frame type.
+     */
     UNKNOWN,
+    /**
+     * Task frame type.
+     */
     TASK,
+    /**
+     * Goal frame type.
+     */
     GOAL,
+    /**
+     * Challenge frame type.
+     */
     CHALLENGE;
 
-    @Override
-    public String toString() {
-        return name().toLowerCase(Locale.ENGLISH);
-    }
-
+    /**
+     * Retrieves the FrameType associated with the given name.
+     *
+     * @param name The name of the FrameType.
+     * @return The FrameType associated with the name, or UNKNOWN if not found.
+     */
     public static FrameType getFrameType(@Nullable String name) {
         if (StringUtils.isEmpty(name)) return UNKNOWN;
 
-        name = name.toLowerCase(Locale.ENGLISH);
+        name = name.toUpperCase(Locale.ENGLISH);
 
         for (FrameType type : values()) {
-            if (name.equals(type + "")) return type;
+            if (name.equals(type.name())) return type;
         }
 
         return UNKNOWN;
