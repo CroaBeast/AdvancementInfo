@@ -33,7 +33,7 @@ public class Example implements Listener {
 
         String parent = info.getParent();
 
-        boolean announce = info.announceToChat(),
+        boolean announce = info.isAnnounceChat(),
                 isHidden = info.isHidden();
 
         sendToPlayer(player,

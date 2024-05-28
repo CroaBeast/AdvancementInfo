@@ -1,6 +1,5 @@
 package me.croabeast.advancementinfo;
 
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
@@ -33,7 +32,8 @@ public enum FrameType {
      * @return The FrameType associated with the name, or UNKNOWN if not found.
      */
     public static FrameType getFrameType(@Nullable String name) {
-        if (StringUtils.isEmpty(name)) return UNKNOWN;
+        if (name == null || name.length() < 1)
+            return UNKNOWN;
 
         name = name.toUpperCase(Locale.ENGLISH);
 

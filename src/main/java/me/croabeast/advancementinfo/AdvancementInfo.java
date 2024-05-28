@@ -1,7 +1,6 @@
 package me.croabeast.advancementinfo;
 
 import lombok.Getter;
-import org.apache.commons.lang.WordUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementDisplay;
@@ -13,9 +12,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * This class encapsulates detailed information about a Bukkit advancement in Minecraft.
@@ -30,8 +30,10 @@ import java.util.regex.Pattern;
 @Getter
 public class AdvancementInfo {
 
-    private static final double MC_VS = ((Function<String, Double>) s -> {
-        Matcher m = Pattern.compile("1\\.(\\d+(\\.\\d+)?)").matcher(s);
+    private static final double MC_VS = ((Supplier<Double>) () -> {
+        Matcher m = Pattern
+                .compile("1\\.(\\d+(\\.\\d+)?)")
+                .matcher(Bukkit.getVersion());
         if (!m.find()) return 0.0;
 
         try {
@@ -39,7 +41,7 @@ public class AdvancementInfo {
         } catch (Exception e) {
             return 0.0;
         }
-    }).apply(Bukkit.getVersion());
+    }).get();
 
     private static Class<?> from(String name) {
         try {
@@ -126,7 +128,7 @@ public class AdvancementInfo {
         }
     }
 
-    private static final Function<Object, ItemStack> ITEM_FUNCTION = display -> {
+    private static ItemStack getItem(Object display) {
         Object nmsItem = fromField("c", display);
         if (nmsItem == null) return null;
 
@@ -146,7 +148,7 @@ public class AdvancementInfo {
         } catch (Exception e) {
             return null;
         }
-    };
+    }
 
     /**
      * The Bukkit advancement object.
@@ -263,55 +265,62 @@ public class AdvancementInfo {
         this.rewards = fromField(rewardsField, handle, Object.class, null);
         this.requirements = fromField(rField, handle, String[][].class, null);
 
-        if (MC_VS >= 18.0) {
-            AdvancementDisplay parent = advancement.getDisplay();
+        Object previous = null;
+        try {
+            Method m = advancement.getClass().getMethod("getDisplay");
+            previous = m.invoke(advancement);
+        } catch (Exception ignored) {}
 
-            if (parent != null) {
-                this.title = parent.getTitle();
-                this.description = parent.getDescription();
+        if (MC_VS >= 18.0 && previous != null) {
+            AdvancementDisplay parent = (AdvancementDisplay) previous;
 
-                this.icon = parent.getIcon();
+            this.title = parent.getTitle();
+            this.description = parent.getDescription();
 
-                this.showToast = parent.shouldShowToast();
-                this.announceChat = parent.shouldAnnounceChat();
-                this.hidden = parent.isHidden();
+            this.icon = parent.getIcon();
 
-                this.x = parent.getX();
-                this.y = parent.getY();
+            this.showToast = parent.shouldShowToast();
+            this.announceChat = parent.shouldAnnounceChat();
+            this.hidden = parent.isHidden();
 
-                this.type = FrameType.getFrameType(parent.getType().name());
-                return;
-            }
+            this.x = parent.getX();
+            this.y = parent.getY();
+
+            this.type = FrameType.getFrameType(parent.getType().name());
+            return;
         }
 
-        Class<?> displayClass = MC_VS >= 17.0 ?
+        Class<?> clazz = MC_VS >= 17.0 ?
                 from("net.minecraft.advancements.AdvancementDisplay") :
                 getNmsClass("AdvancementDisplay");
 
         Object display = null;
 
         for (Field field : handleFields) {
-            if (field.getType() != displayClass)
-                continue;
+            if (field.getType() != clazz) continue;
 
             display = fromField(field, handle, Object.class, null);
             break;
         }
 
-        Objects.requireNonNull(display);
-
         String key = bukkit.getKey().toString();
 
         key = key.substring(key.lastIndexOf('/') + 1);
         key = key.replace('_', ' ');
-        key = WordUtils.capitalizeFully(key);
+
+        key = Arrays.stream(key.split(" "))
+                .map(s -> {
+                    String first = s.substring(0, 1).toUpperCase();
+                    return first + s.substring(1).toLowerCase();
+                })
+                .collect(Collectors.joining(" "));
 
         this.title = fromChatComponent(display, "a", key);
 
         String d = fromChatComponent(display, "b", "No description.");
         this.description = d.replaceAll('\\' + "n", " ");
 
-        this.icon = ITEM_FUNCTION.apply(display);
+        this.icon = getItem(display);
 
         this.showToast = fromField("f", display, true);
         this.announceChat = fromField("g", display, true);
