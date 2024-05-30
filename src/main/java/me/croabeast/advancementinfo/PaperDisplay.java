@@ -25,8 +25,6 @@ class PaperDisplay {
 
     @SneakyThrows
     PaperDisplay(Object display) {
-        Class<?> paperDisplay = display.getClass();
-
         title = deserialize(display, true);
         description = deserialize(display, false);
 
@@ -37,7 +35,7 @@ class PaperDisplay {
         hidden = getValue(display, "isHidden");
 
         Object type = getValue(display, "frame");
-        this.type = FrameType.getFrameType(type.toString());
+        this.type = FrameType.getFrameType(type != null ? type.toString() : null);
     }
 
 
