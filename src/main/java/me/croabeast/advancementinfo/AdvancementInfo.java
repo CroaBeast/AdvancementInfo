@@ -272,6 +272,28 @@ public class AdvancementInfo {
         } catch (Exception ignored) {}
 
         if (MC_VS >= 18.0 && previous != null) {
+            PaperDisplay display = null;
+            try {
+                display = new PaperDisplay(previous);
+            } catch (Exception ignored) {}
+
+            if (display != null) {
+                this.title = display.getTitle();
+                this.description = display.getDescription();
+
+                this.icon = display.getIcon();
+
+                this.showToast = display.isShowToast();
+                this.announceChat = display.isAnnounceChat();
+                this.hidden = display.isHidden();
+
+                this.x = display.getX();
+                this.y = display.getY();
+
+                this.type = display.getType();
+                return;
+            }
+
             AdvancementDisplay parent = (AdvancementDisplay) previous;
 
             this.title = parent.getTitle();
