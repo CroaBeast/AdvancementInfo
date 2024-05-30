@@ -351,7 +351,8 @@ public class AdvancementInfo {
         this.x = fromField("i", display, 0F);
         this.y = fromField("j", display, 0F);
 
-        this.type = FrameType.getFrameType(fromField("e", display).toString());
+        Object type = fromField("e", display);
+        this.type = FrameType.getFrameType(type != null ? type.toString() : null);
     }
 
     /**
