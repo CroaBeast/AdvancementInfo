@@ -51,10 +51,15 @@ public class AdvancementInfo {
         }
     }
 
+    private static Class<?> fromCraftBukkit(String name) {
+        String pack = Bukkit.getServer().getClass().getPackage().getName();
+        return from(pack + name);
+    }
+
     @Nullable
-    private static Class<?> getNmsClass(String pack, String name) {
+    private static Class<?> getNmsClass(String name) {
         return from(
-                (pack != null ? pack : "net.minecraft.server") +
+                "net.minecraft.server" +
                         "." +
                         Bukkit.getServer().getClass()
                                 .getPackage()
@@ -63,15 +68,8 @@ public class AdvancementInfo {
         );
     }
 
-    @Nullable
-    private static Class<?> getNmsClass(String name) {
-        return getNmsClass(null, name);
-    }
-
     private static Object getHandle(Advancement advancement) {
-        String name = "advancement.CraftAdvancement";
-
-        Class<?> craft = getNmsClass("org.bukkit.craftbukkit", name);
+        Class<?> craft = fromCraftBukkit("advancement.CraftAdvancement");
         if (craft == null) throw new NullPointerException();
 
         try {
@@ -132,7 +130,7 @@ public class AdvancementInfo {
         Object nmsItem = fromField("c", display);
         if (nmsItem == null) return null;
 
-        Class<?> clazz = getNmsClass("org.bukkit.craftbukkit", "inventory.CraftItemStack");
+        Class<?> clazz = fromCraftBukkit("inventory.CraftItemStack");
         if (clazz == null) return null;
 
         Constructor<?> ct;
