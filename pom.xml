@@ -6,7 +6,7 @@
 
     <groupId>me.croabeast</groupId>
     <artifactId>AdvancementInfo</artifactId>
-    <version>3.0</version>
+    <version>3.1.2</version>
     <packaging>jar</packaging>
 
     <name>AdvancementInfo</name>
