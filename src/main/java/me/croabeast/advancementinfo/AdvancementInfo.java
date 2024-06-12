@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 @Getter
 public class AdvancementInfo {
 
+    private static final String CRAFTBUKKIT_PACKAGE = Bukkit.getServer().getClass().getPackage().getName();
+
     private static final double MC_VS = ((Supplier<Double>) () -> {
         Matcher m = Pattern
                 .compile("1\\.(\\d+(\\.\\d+)?)")
@@ -53,7 +55,7 @@ public class AdvancementInfo {
 
     private static Class<?> fromCraftBukkit(String name) {
         String pack = Bukkit.getServer().getClass().getPackage().getName();
-        return from(pack + name);
+        return from(pack + '.' + name);
     }
 
     @Nullable
@@ -69,8 +71,12 @@ public class AdvancementInfo {
     }
 
     private static Object getHandle(Advancement advancement) {
-        Class<?> craft = fromCraftBukkit("advancement.CraftAdvancement");
-        if (craft == null) throw new NullPointerException();
+        Class<?> craft;
+        try {
+            craft = fromCraftBukkit("advancement.CraftAdvancement");
+        } catch (Exception e) {
+            throw new NullPointerException(e.getLocalizedMessage());
+        }
 
         try {
             Method method = craft.getMethod("getHandle");
