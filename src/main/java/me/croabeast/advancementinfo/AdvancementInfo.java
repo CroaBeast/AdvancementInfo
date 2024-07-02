@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @Getter
 public class AdvancementInfo {
 
-    private static final String CRAFTBUKKIT_PACKAGE = Bukkit.getServer().getClass().getPackage().getName();
+    private static final String CRAFT_BUKKIT_PACKAGE = Bukkit.getServer().getClass().getPackage().getName();
 
     private static final double MC_VS = ((Supplier<Double>) () -> {
         Matcher m = Pattern
@@ -54,20 +54,12 @@ public class AdvancementInfo {
     }
 
     private static Class<?> fromCraftBukkit(String name) {
-        String pack = Bukkit.getServer().getClass().getPackage().getName();
-        return from(pack + '.' + name);
+        return from(CRAFT_BUKKIT_PACKAGE + '.' + name);
     }
 
     @Nullable
     private static Class<?> getNmsClass(String name) {
-        return from(
-                "net.minecraft.server" +
-                        "." +
-                        Bukkit.getServer().getClass()
-                                .getPackage()
-                                .getName().split("\\.")[3] +
-                        "." + name
-        );
+        return from("net.minecraft.server" + "." + CRAFT_BUKKIT_PACKAGE.split("\\.")[3] + "." + name);
     }
 
     private static Object getHandle(Advancement advancement) {
@@ -142,11 +134,11 @@ public class AdvancementInfo {
         Constructor<?> ct;
         try {
             ct = clazz.getDeclaredConstructor(nmsItem.getClass());
+            ct.setAccessible(true);
         } catch (NoSuchMethodException e) {
             return null;
         }
 
-        ct.setAccessible(true);
         try {
             return (ItemStack) ct.newInstance(nmsItem);
         } catch (Exception e) {

@@ -32,7 +32,7 @@ public enum FrameType {
      * @return The FrameType associated with the name, or UNKNOWN if not found.
      */
     public static FrameType getFrameType(@Nullable String name) {
-        if (name == null || name.length() < 1)
+        if (name == null || name.isEmpty())
             return UNKNOWN;
 
         name = name.toUpperCase(Locale.ENGLISH);

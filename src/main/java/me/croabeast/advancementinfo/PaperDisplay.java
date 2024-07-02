@@ -19,14 +19,10 @@ class PaperDisplay {
 
     private final FrameType type;
 
-    static Class<?> fromText(String name) throws ClassNotFoundException {
-        return Class.forName("net.kyori.adventure.text." + name);
-    }
-
     @SneakyThrows
     PaperDisplay(Object display) {
-        title = deserialize(display, true);
         description = deserialize(display, false);
+        title = deserialize(display, true);
 
         icon = getValue(display, "icon");
 
@@ -38,10 +34,13 @@ class PaperDisplay {
         this.type = FrameType.getFrameType(type != null ? type.toString() : null);
     }
 
-
     @SuppressWarnings("unchecked")
     <T> T getValue(Object display, String name) throws Exception {
         return (T) display.getClass().getMethod(name).invoke(display);
+    }
+
+    static Class<?> fromText(String name) throws ClassNotFoundException {
+        return Class.forName("net.kyori.adventure.text." + name);
     }
 
     String deserialize(Object display, boolean isTitle) {
