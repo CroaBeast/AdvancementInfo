@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>me.croabeast</groupId>
+    <groupId>me.croabeast.lib</groupId>
     <artifactId>AdvancementInfo</artifactId>
-    <version>3.1.2</version>
+    <version>1.0-NEX</version>
     <packaging>jar</packaging>
 
     <name>AdvancementInfo</name>
@@ -23,8 +23,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -75,6 +75,13 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.26</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-serializer-legacy</artifactId>
+            <version>4.17.0</version>
             <scope>provided</scope>
         </dependency>
         

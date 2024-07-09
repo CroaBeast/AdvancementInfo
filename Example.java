@@ -1,4 +1,4 @@
-import me.croabeast.advancementinfo.AdvancementInfo;
+import me.croabeast.lib.advancement.AdvancementInfo;
 import org.bukkit.ChatColor;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.entity.Player;
@@ -23,26 +23,19 @@ public class Example implements Listener {
         Advancement adv = event.getAdvancement();
         Player player = event.getPlayer();
 
-        AdvancementInfo info = new AdvancementInfo(adv);
+        AdvancementInfo info = AdvancementInfo.from(adv);
 
-        String title = info.getTitle();
-        if (title == null) title = "";
-
-        String description = info.getDescription();
+        String title = info.getTitle(), description = info.getDescription();
         ItemStack item = info.getItem();
 
-        String parent = info.getParent();
-
-        boolean announce = info.isAnnounceChat(),
-                isHidden = info.isHidden();
+        boolean announce = info.doesAnnounceToChat(), hidden = info.isHidden();
 
         sendToPlayer(player,
                 "&7",
                 "&7 &6&nAdvancement: &e" + title,
                 "&8  • &7Description: &f" + description,
-                "&8  • &7Parent: &f" + parent,
                 (item != null ? "&8  • &7Item Icon: &f" + item : null),
-                "&8  • &7Is Hidden?: &f" + isHidden,
+                "&8  • &7Is Hidden?: &f" + hidden,
                 "&8  • &7Can Announce to Chat?: &f" + announce,
                 "&7"
         );
