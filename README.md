@@ -41,8 +41,7 @@ Maven - add to pom.xml
     <dependency>
         <groupId>com.github.CroaBeast</groupId>
         <artifactId>AdvancementInfo</artifactId>
-        <!--Replace version with the latest release version-->
-        <version>RELEASE_TAG</version>
+        <version>c9d33fd7e7</version>
     </dependency>
 </dependencies>
 ```
@@ -57,6 +56,6 @@ allprojects {
 ```
 ```
 dependencies {
-    implementation 'com.github.CroaBeast:AdvancementInfo:RELEASE_TAG'
+    implementation 'com.github.CroaBeast:AdvancementInfo:c9d33fd7e7'
 }
 ```
