@@ -22,6 +22,9 @@ public interface AdvancementInfo {
     @NotNull
     Advancement getBukkit();
 
+    @Nullable
+    Advancement getParent();
+
     /**
      * Gets the title of the advancement.
      *
@@ -146,12 +149,12 @@ public interface AdvancementInfo {
     Object getRewards();
 
     /**
-     * Gets the requirements of the advancement as a 2D array of strings.
+     * Gets the requirements of the advancement as a 2D list of strings.
      *
-     * @return a 2D array representing the requirements, or null if there are no requirements.
+     * @return a 2D list representing the requirements, or null if there are no requirements.
      */
     @Nullable
-    String[][] getRequirements();
+    List<List<String>> getRequirements();
 
     /**
      * Creates an AdvancementInfo instance from a given Bukkit Advancement object.
@@ -163,13 +166,13 @@ public interface AdvancementInfo {
     @Nullable
     static AdvancementInfo from(@NotNull Advancement advancement) {
         try {
-            if (ReflectionUtils.MC_VS >= 18.0) {
+            if (ReflectionUtils.MC_VS >= 17.1)
                 try {
                     return new PaperInfoImpl(advancement);
                 } catch (Exception e) {
-                    return new BukkitInfoImpl(advancement);
+                    if (ReflectionUtils.MC_VS >= 18)
+                        return new BukkitInfoImpl(advancement);
                 }
-            }
 
             return new ReflectInfoImpl(advancement);
         } catch (Exception e) {

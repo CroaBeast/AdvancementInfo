@@ -2,37 +2,38 @@ package me.croabeast.lib.advancement;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.advancement.Advancement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 abstract class AdvancementImpl implements AdvancementInfo {
 
     private final Advancement bukkit;
     @Getter(AccessLevel.NONE)
-    Object handle;
+    protected Object handle;
+
+    private Advancement parent = null;
 
     @NotNull
-    private final Map<String, Object> criteria;
+    private Map<String, Object> criteria = new HashMap<>();
     @Nullable
-    private final Object rewards;
+    private Object rewards = null;
     @Nullable
-    private final String[][] requirements;
+    private List<List<String>> requirements = null;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("all")
     AdvancementImpl(Advancement advancement) {
         bukkit = Objects.requireNonNull(advancement);
 
         Class<?> craft;
         try {
-            craft = ReflectionUtils.fromCraftBukkit("advancement.CraftAdvancement");
+            craft = ReflectionUtils.fromBukkit("advancement.CraftAdvancement");
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -44,41 +45,54 @@ abstract class AdvancementImpl implements AdvancementInfo {
             throw new IllegalStateException(e);
         }
 
-        Field criteriaField = null;
-        Field rField = null;
-        Field rewardsField = null;
+        ReflectionUtils.FieldFinder find = ReflectionUtils.from(handle);
+        if (handle.getClass().getSimpleName().contains("AdvancementHolder"))
+            try {
+                handle = find.get("Advancement");
+                find = ReflectionUtils.from(handle);
+            } catch (Exception ignored) {}
 
-        Field[] handleFields = handle.getClass().getDeclaredFields();
-
-        Class<?> rewardsClass = ReflectionUtils.MC_VS >= 17.0 ?
-                ReflectionUtils.from("net.minecraft.advancements.AdvancementRewards") :
-                ReflectionUtils.getNmsClass("AdvancementRewards");
-
-        for (Field field : handleFields) {
-            final Class<?> fieldClass = field.getType();
-
-            if (fieldClass == String[][].class) {
-                rField = field;
-                continue;
-            }
-
-            if (fieldClass == Map.class) {
-                criteriaField = field;
-                continue;
-            }
-
-            if (fieldClass == rewardsClass) rewardsField = field;
+        try {
+            rewards = find.get("AdvancementRewards");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        try {
+            criteria = find.get(Map.class);
+        } catch (Exception ignored) {}
 
-        this.criteria = (Map<String, Object>)
-                ReflectionUtils.fromField(criteriaField, handle, Map.class, new HashMap<>());
+        try {
+            Object newer = find.get("AdvancementRequirements");
 
-        this.rewards = ReflectionUtils.fromField(rewardsField, handle, Object.class, null);
-        this.requirements = ReflectionUtils.fromField(rField, handle, String[][].class, null);
-    }
+            Object before = newer != null ?
+                    ReflectionUtils.from(newer).get(List.class) :
+                    find.get(String[][].class);
 
-    @Override
-    public String toString() {
-        return "AdvancementInfo{bukkit=" + bukkit.getKey() + '}';
+            if (before instanceof String[][]) {
+                List<List<String>> list = new ArrayList<>();
+
+                for (String[] s : (String[][]) before)
+                    list.add(new ArrayList<>(Arrays.asList(s)));
+
+                before = list;
+            }
+
+            requirements = (List<List<String>>) before;
+        } catch (Exception ignored) {}
+
+        try {
+            Class<?> keyClass = ReflectionUtils.MC_VS >= 17.0 ?
+                    ReflectionUtils.clazz("net.minecraft.resources.MinecraftKey") :
+                    ReflectionUtils.getNmsClass("MinecraftKey");
+
+            Object parentKey = find.get(find.get(handle.getClass()), keyClass);
+
+            String namespace = (String) keyClass
+                    .getMethod("getNamespace").invoke(parentKey);
+            String key = (String) keyClass
+                    .getMethod("getKey").invoke(parentKey);
+
+            parent = Bukkit.getAdvancement(new NamespacedKey(namespace, key));
+        } catch (Exception ignored) {}
     }
 }

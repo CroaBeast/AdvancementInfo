@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -28,12 +27,11 @@ class ReflectInfoImpl extends AdvancementImpl {
 
     private final Frame frame;
 
-    private static String fromChatComponent(Object display, String field, String def) {
-        Object object = ReflectionUtils.fromField(field, display);
+    private static String fromComponent(Object object, String def) {
         if (object == null) return def;
 
         Class<?> chat = ReflectionUtils.MC_VS >= 17.0 ?
-                ReflectionUtils.from("net.minecraft.network.chat.IChatBaseComponent") :
+                ReflectionUtils.clazz("net.minecraft.network.chat.IChatBaseComponent") :
                 ReflectionUtils.getNmsClass("IChatBaseComponent");
 
         if (chat == null) return def;
@@ -46,11 +44,10 @@ class ReflectInfoImpl extends AdvancementImpl {
         }
     }
 
-    private static ItemStack getItem(Object display) {
-        Object nmsItem = ReflectionUtils.fromField("c", display);
+    private static ItemStack getItem(Object nmsItem) {
         if (nmsItem == null) return null;
 
-        Class<?> clazz = ReflectionUtils.fromCraftBukkit("inventory.CraftItemStack");
+        Class<?> clazz = ReflectionUtils.fromBukkit("inventory.CraftItemStack");
         if (clazz == null) return null;
 
         Constructor<?> ct;
@@ -68,22 +65,11 @@ class ReflectInfoImpl extends AdvancementImpl {
         }
     }
 
-    ReflectInfoImpl(Advancement advancement) {
+    ReflectInfoImpl(Advancement advancement) throws Exception {
         super(advancement);
 
-        Class<?> clazz = ReflectionUtils.MC_VS >= 17.0 ?
-                ReflectionUtils.from("net.minecraft.advancements.AdvancementDisplay") :
-                ReflectionUtils.getNmsClass("AdvancementDisplay");
-
-        Object display = null;
-
-        Field[] handleFields = handle.getClass().getDeclaredFields();
-        for (Field field : handleFields) {
-            if (field.getType() != clazz) continue;
-
-            display = ReflectionUtils.fromField(field, handle, Object.class, null);
-            break;
-        }
+        ReflectionUtils.FieldFinder find = ReflectionUtils.from(handle);
+        find = ReflectionUtils.from(find.get("AdvancementDisplay"));
 
         String key = getBukkit().getKey().toString();
 
@@ -97,21 +83,21 @@ class ReflectInfoImpl extends AdvancementImpl {
                 })
                 .collect(Collectors.joining(" "));
 
-        this.title = fromChatComponent(display, "a", key);
+        this.title = fromComponent(find.byName("a"), key);
 
-        String d = fromChatComponent(display, "b", "No description.");
+        String d = fromComponent(find.byName("b"), "No description.");
         this.description = d.replaceAll('\\' + "n", " ");
 
-        this.icon = getItem(display);
+        this.icon = getItem(find.byName("c"));
 
-        this.showToast = ReflectionUtils.fromField("f", display, true);
-        this.announceChat = ReflectionUtils.fromField("g", display, true);
-        this.hidden = ReflectionUtils.fromField("g", display, false);
+        this.x = find.byName("i");
+        this.y = find.byName("j");
 
-        this.x = ReflectionUtils.fromField("i", display, 0F);
-        this.y = ReflectionUtils.fromField("j", display, 0F);
+        this.showToast = find.byName("f");
+        this.announceChat = find.byName("g");
+        this.hidden = find.byName("h");
 
-        Object type = ReflectionUtils.fromField("e", display);
+        final Object type = find.byName("e");
         this.frame = Frame.from(type != null ? type.toString() : null);
     }
 
@@ -121,5 +107,11 @@ class ReflectInfoImpl extends AdvancementImpl {
 
     public boolean doesAnnounceToChat() {
         return announceChat;
+    }
+
+    @Override
+    public String toString() {
+        Advancement p = getParent();
+        return "ReflectAdvancementInfo{bukkit=" + getBukkit().getKey() + ", parent=" + (p == null ? null : p.getKey()) + '}';
     }
 }

@@ -9,16 +9,16 @@ If you are using PaperMC as the base of your project, use its method instead of 
 2. Call a new instance for it:
 ```
 Advancement adv = Bukkit.getAdvancement(key);
-AdvancementInfo info = new AdvancementInfo(adv);
+AdvancementInfo info = AdvancementInfo.from(adv);
 ```
 3. Get the desired object(s):
 ```
-String frameType = info.getFrameType();
+String frame = info.getFrame().toString();
 String title = info.getTitle();
 
 String description = info.getDescription();
 
-String[] descArray = info.getDescription(24);
+String[] descArray = info.getDescriptionArray(24);
 ItemStack item = info.getItem();
 ```
 4. Use it in whatever you want. Check the [ExampleClass](https://github.com/CroaBeast/AdvancementInfo/blob/main/Example.java) here.

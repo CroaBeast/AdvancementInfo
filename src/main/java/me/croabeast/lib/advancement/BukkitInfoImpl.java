@@ -61,4 +61,10 @@ final class BukkitInfoImpl extends AdvancementImpl {
     public boolean doesAnnounceToChat() {
         return announceChat;
     }
+
+    @Override
+    public String toString() {
+        Advancement p = getParent();
+        return "BukkitAdvancementInfo{bukkit=" + getBukkit().getKey() + ", parent=" + (p == null ? null : p.getKey()) + '}';
+    }
 }

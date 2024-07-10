@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
+import java.util.function.Supplier;
 
 @Getter
 final class PaperInfoImpl extends AdvancementImpl {
@@ -27,7 +28,17 @@ final class PaperInfoImpl extends AdvancementImpl {
 
     @SneakyThrows
     PaperInfoImpl(Advancement advancement) {
-        super(advancement);
+        super(((Supplier<Advancement>) () -> {
+            try {
+                Class.forName(ReflectionUtils.MC_VS >= 12.0 ?
+                        "com.destroystokyo.paper.ParticleBuilder" :
+                        "io.papermc.paperclip.Paperclip");
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+
+            return advancement;
+        }).get());
 
         Object display;
         try {
@@ -80,5 +91,11 @@ final class PaperInfoImpl extends AdvancementImpl {
 
     public float getY() {
         return 0;
+    }
+
+    @Override
+    public String toString() {
+        Advancement p = getParent();
+        return "PaperAdvancementInfo{bukkit=" + getBukkit().getKey() + ", parent=" + (p == null ? null : p.getKey()) + '}';
     }
 }

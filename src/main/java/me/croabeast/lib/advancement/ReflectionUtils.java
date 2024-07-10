@@ -5,6 +5,7 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +29,7 @@ class ReflectionUtils {
     }).get();
 
     @Nullable
-    Class<?> from(String name) {
+    Class<?> clazz(String name) {
         try {
             return Class.forName(name);
         } catch (Exception e) {
@@ -37,42 +38,93 @@ class ReflectionUtils {
     }
 
     @Nullable
-    Class<?> fromCraftBukkit(String name) {
-        return from(CRAFT_BUKKIT_PACKAGE + '.' + name);
+    Class<?> fromBukkit(String name) {
+        return clazz(CRAFT_BUKKIT_PACKAGE + '.' + name);
     }
 
     @Nullable
     Class<?> getNmsClass(String name) {
-        return from("net.minecraft.server" + "." + CRAFT_BUKKIT_PACKAGE.split("\\.")[3] + "." + name);
+        return clazz("net.minecraft.server" + "." + CRAFT_BUKKIT_PACKAGE.split("\\.")[3] + "." + name);
     }
 
-    @Nullable
-    Field getField(Object o, String name) {
-        try {
-            return o.getClass().getDeclaredField(name);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    <T> T fromField(Field field, Object initial, Class<T> clazz, T def) {
-        if (field == null) return def;
-
-        try {
-            if (!field.isAccessible()) field.setAccessible(true);
-            return clazz.cast(field.get(initial));
-        } catch (Exception e) {
-            return def;
-        }
+    static FieldFinder from(Object parent) {
+        return new FieldFinder(parent);
     }
 
     @SuppressWarnings("unchecked")
-    <T> T fromField(String field, Object initial, T def) {
-        return fromField(getField(initial, field), initial, (Class<T>) def.getClass(), def);
-    }
+    static class FieldFinder {
 
-    @Nullable
-    Object fromField(String field, Object initial) {
-        return fromField(getField(initial, field), initial, Object.class, null);
+        private final Field[] fields;
+        private final Object parent;
+
+        private FieldFinder(Object parent) {
+            this.parent = parent;
+            fields = parent.getClass().getDeclaredFields();
+        }
+
+        public Class<?> getType() {
+            return parent.getClass();
+        }
+
+        @Nullable
+        public Field search(Class<?> target) {
+            for (Field field : fields) {
+                if (field.getType() != target)
+                    continue;
+
+                field.setAccessible(true);
+                return field;
+            }
+
+            return null;
+        }
+
+        @Nullable
+        public Field search(String clazz) {
+            for (Field field : fields) {
+                if (!field.getType().getSimpleName().contains(clazz))
+                    continue;
+
+                field.setAccessible(true);
+                return field;
+            }
+
+            return null;
+        }
+
+        @Nullable
+        public Field searchForName(String name) {
+            try {
+                Field field = getType().getDeclaredField(name);
+                field.setAccessible(true);
+                return field;
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        public <T> T get(Object parent, Class<T> target) throws Exception {
+            return (T) Objects.requireNonNull(search(target)).get(parent);
+        }
+
+        public <T> T get(Class<T> target) throws Exception {
+            return get(parent, target);
+        }
+
+        public <T> T get(Object parent, String target) throws Exception {
+            return (T) Objects.requireNonNull(search(target)).get(parent);
+        }
+
+        public <T> T get(String target) throws Exception {
+            return get(parent, target);
+        }
+
+        public <T> T byName(Object parent, String name) throws Exception {
+            return (T) Objects.requireNonNull(searchForName(name)).get(parent);
+        }
+
+        public <T> T byName(String name) throws Exception {
+            return byName(parent, name);
+        }
     }
 }
