@@ -75,7 +75,7 @@ jobs:
     - name: Checkout Maven repository
       uses: actions/checkout@v4
       with:
-        repository: CroaBeast/repositories
+        repository: CroaBeast/repo
         path: maven-repo
         token: ${{ secrets.MAVEN_DEPLOY_TOKEN }}
         
