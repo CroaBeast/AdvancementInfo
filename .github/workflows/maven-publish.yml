@@ -5,6 +5,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  release:
+    types: [created]
 
 jobs:
   build:
@@ -69,3 +71,61 @@ jobs:
           target/AdvancementInfo-latest.jar
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Checkout Maven repository
+      uses: actions/checkout@v4
+      with:
+        repository: CroaBeast/repositories
+        path: maven-repo
+        token: ${{ secrets.MAVEN_DEPLOY_TOKEN }}
+        
+    - name: Configure Git
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        
+    - name: Deploy to Maven repository
+      run: |
+        # Create directory structure
+        mkdir -p maven-repo/me/croabeast/AdvancementInfo/${{ env.VERSION }}
+        
+        # Copy JAR file
+        cp target/AdvancementInfo-${{ env.VERSION }}.jar maven-repo/me/croabeast/AdvancementInfo/${{ env.VERSION }}/
+        
+        # Create POM file
+        cat > maven-repo/me/croabeast/AdvancementInfo/${{ env.VERSION }}/AdvancementInfo-${{ env.VERSION }}.pom << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>me.croabeast</groupId>
+            <artifactId>AdvancementInfo</artifactId>
+            <version>${{ env.VERSION }}</version>
+            <packaging>jar</packaging>
+        </project>
+        EOF
+        
+        # Update or create maven-metadata.xml
+        cat > maven-repo/me/croabeast/AdvancementInfo/maven-metadata.xml << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <metadata>
+          <groupId>me.croabeast</groupId>
+          <artifactId>AdvancementInfo</artifactId>
+          <versioning>
+            <latest>${{ env.VERSION }}</latest>
+            <release>${{ env.VERSION }}</release>
+            <versions>
+              <version>${{ env.VERSION }}</version>
+            </versions>
+            <lastUpdated>$(date +%Y%m%d%H%M%S)</lastUpdated>
+          </versioning>
+        </metadata>
+        EOF
+        
+        # Commit and push changes
+        cd maven-repo
+        git add .
+        git commit -m "Deploy AdvancementInfo ${{ env.VERSION }}"
+        git push
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
