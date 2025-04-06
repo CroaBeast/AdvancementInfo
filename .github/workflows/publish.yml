@@ -29,11 +29,11 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Plugin
-        path: target/AdvancementInfo-*.jar
+        path: target/${{ github.event.repository.name }}-*.jar
 
     - name: Get Plugin Version
       id: version
-      run: echo "VERSION=$(basename $(ls target/AdvancementInfo-*.jar | grep -vE '(-sources|-javadoc).jar') .jar | sed 's/AdvancementInfo-//')" >> $GITHUB_ENV
+      run: echo "VERSION=$(basename $(ls target/${{ github.event.repository.name }}-*.jar | grep -vE '(-sources|-javadoc).jar') .jar | sed 's/${{ github.event.repository.name }}-//')" >> $GITHUB_ENV
 
     - name: Delete existing GitHub release (if exists)
       run: |
@@ -57,8 +57,8 @@ jobs:
 
     - name: Rename & Upload Latest Release
       run: |
-        JAR_FILE=$(ls target/AdvancementInfo-*.jar | grep -vE '(-sources|-javadoc).jar' | head -n 1)
-        cp "$JAR_FILE" target/AdvancementInfo-latest.jar
+        JAR_FILE=$(ls target/${{ github.event.repository.name }}-*.jar | grep -vE '(-sources|-javadoc).jar' | head -n 1)
+        cp "$JAR_FILE" target/${{ github.event.repository.name }}-latest.jar
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -68,7 +68,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          target/AdvancementInfo-latest.jar
+          target/${{ github.event.repository.name }}-latest.jar
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -87,29 +87,29 @@ jobs:
     - name: Deploy to Maven repository
       run: |
         # Create directory structure
-        mkdir -p maven-repo/me/croabeast/AdvancementInfo/${{ env.VERSION }}
+        mkdir -p maven-repo/me/croabeast/${{ github.event.repository.name }}/${{ env.VERSION }}
         
         # Copy JAR file
-        cp target/AdvancementInfo-${{ env.VERSION }}.jar maven-repo/me/croabeast/AdvancementInfo/${{ env.VERSION }}/
+        cp target/${{ github.event.repository.name }}-${{ env.VERSION }}.jar maven-repo/me/croabeast/${{ github.event.repository.name }}/${{ env.VERSION }}/
         
         # Create POM file
-        cat > maven-repo/me/croabeast/AdvancementInfo/${{ env.VERSION }}/AdvancementInfo-${{ env.VERSION }}.pom << EOF
+        cat > maven-repo/me/croabeast/${{ github.event.repository.name }}/${{ env.VERSION }}/${{ github.event.repository.name }}-${{ env.VERSION }}.pom << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <project>
             <modelVersion>4.0.0</modelVersion>
             <groupId>me.croabeast</groupId>
-            <artifactId>AdvancementInfo</artifactId>
+            <artifactId>${{ github.event.repository.name }}</artifactId>
             <version>${{ env.VERSION }}</version>
             <packaging>jar</packaging>
         </project>
         EOF
         
         # Update or create maven-metadata.xml
-        cat > maven-repo/me/croabeast/AdvancementInfo/maven-metadata.xml << EOF
+        cat > maven-repo/me/croabeast/${{ github.event.repository.name }}/maven-metadata.xml << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <metadata>
           <groupId>me.croabeast</groupId>
-          <artifactId>AdvancementInfo</artifactId>
+          <artifactId>${{ github.event.repository.name }}</artifactId>
           <versioning>
             <latest>${{ env.VERSION }}</latest>
             <release>${{ env.VERSION }}</release>
@@ -124,7 +124,7 @@ jobs:
         # Commit and push changes
         cd maven-repo
         git add .
-        git commit -m "Deploy AdvancementInfo ${{ env.VERSION }}"
+        git commit -m "Deploy ${{ github.event.repository.name }} ${{ env.VERSION }}"
         git push
 
 env:
