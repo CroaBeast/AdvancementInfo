@@ -1,4 +1,4 @@
-# AdvancementInfo API
+# AdvancementInfo
 
 AdvancementInfo API is a specialized library designed to simplify the retrieval and manipulation of Minecraft advancements in your plugins. It abstracts the underlying complexity of accessing advancement data—such as titles, descriptions, icons, criteria, rewards, and display settings—by providing a uniform interface and several concrete implementations that use reflection to work with Bukkit, Paper, and other server internals.
 
