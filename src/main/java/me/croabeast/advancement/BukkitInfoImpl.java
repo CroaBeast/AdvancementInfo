@@ -109,7 +109,7 @@ final class BukkitInfoImpl extends AdvancementImpl {
         this.hidden = display.isHidden();
         this.x = display.getX();
         this.y = display.getY();
-        this.frame = Frame.from(display.getType().name());
+        this.frame = Frame.fromName(display.getType().name());
     }
 
     /**

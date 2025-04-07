@@ -175,7 +175,7 @@ class ReflectInfoImpl extends AdvancementImpl {
 
         // Retrieve and convert the frame type.
         final Object type = find.byName("e");
-        this.frame = Frame.from(type != null ? type.toString() : null);
+        this.frame = Frame.fromName(type != null ? type.toString() : null);
     }
 
     /**

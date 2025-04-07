@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * description into an array of strings with a specified maximum line length.
  * </p>
  * <p>
- * A static factory method {@link #from(Advancement)} is provided to generate an instance of {@code AdvancementInfo}
+ * A static factory method {@link #create(Advancement)} is provided to generate an instance of {@code AdvancementInfo}
  * from a given Bukkit {@link Advancement}. The implementation returned may vary depending on the Minecraft
  * server version.
  * </p>
@@ -197,7 +197,7 @@ public interface AdvancementInfo {
      * @return an {@code AdvancementInfo} instance representing the advancement, or {@code null} if creation fails.
      */
     @Nullable
-    static AdvancementInfo from(@NotNull Advancement advancement) {
+    static AdvancementInfo create(@NotNull Advancement advancement) {
         try {
             if (ReflectionUtils.MC_VS >= 17.1)
                 try {
@@ -234,16 +234,16 @@ public interface AdvancementInfo {
         CHALLENGE;
 
         /**
-         * Converts a string into its corresponding {@code Frame} type.
+         * Converts a string into its corresponding {@link Frame} type.
          * <p>
          * The conversion is case-insensitive. If the input is {@code null} or does not match any defined frame,
-         * {@code UNKNOWN} is returned.
+         * {@link Frame#UNKNOWN} is returned.
          * </p>
          *
          * @param name the frame name to convert.
-         * @return the corresponding {@code Frame} type.
+         * @return the corresponding {@link Frame} type.
          */
-        public static Frame from(@Nullable String name) {
+        public static Frame fromName(@Nullable String name) {
             if (name == null || name.isEmpty())
                 return UNKNOWN;
 

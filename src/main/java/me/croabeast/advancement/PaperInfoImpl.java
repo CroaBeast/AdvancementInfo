@@ -119,7 +119,7 @@ final class PaperInfoImpl extends AdvancementImpl {
 
         // Retrieve and convert the frame type.
         final Object type = getValue(display, "frame");
-        frame = Frame.from(type != null ? type.toString() : null);
+        frame = Frame.fromName(type != null ? type.toString() : null);
     }
 
     /**

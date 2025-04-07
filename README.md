@@ -58,7 +58,7 @@ public class MyPlugin extends JavaPlugin {
 
         if (advancement != null) {
             // Create an AdvancementInfo instance from the advancement using the static factory method
-            AdvancementInfo info = AdvancementInfo.from(advancement);
+            AdvancementInfo info = AdvancementInfo.create(advancement);
 
             if (info != null) {
                 // Print advancement details to the console
@@ -93,6 +93,52 @@ public class MyPlugin extends JavaPlugin {
 
 - **Formatting Description:**  
   The example demonstrates how to split the description into an array of lines, ensuring that no line exceeds a specified length.
+
+---
+
+## Maven / Gradle Installation
+
+To include AdvancementInfo to the project, add the following repository and dependency to your build configuration. Replace `${version}` with the desired version tag.
+
+### Maven
+
+Add the repository and dependency to your `pom.xml`:
+
+```xml
+<repositories>
+    <repository>
+        <id>croabeast-repo</id>
+        <url>https://croabeast.github.io/repo/</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>me.croabeast</groupId>
+        <artifactId>AdvancementInfo</artifactId>
+        <version>${version}</version>
+        <scope>compile</scope>
+    </dependency>
+</dependencies>
+```
+
+### Gradle
+
+Add the repository and dependency to your `build.gradle`:
+
+```groovy
+repositories {
+    maven {
+        url "https://croabeast.github.io/repo/"
+    }
+}
+
+dependencies {
+    implementation "me.croabeast:AdvancementInfo:${version}"
+}
+```
+
+Replace `${version}` with the appropriate module version.
 
 ---
 
