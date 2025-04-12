@@ -1,3 +1,9 @@
+<p align="center">
+    <a href="https://discord.com/invite/gzzhVqgy3b" alt="Support Server">
+        <img alt="Discord" src="https://img.shields.io/discord/826555143398752286?style=for-the-badge&logo=discord&label=Support%20Server&color=635aea">
+    </a>
+</p>
+
 # AdvancementInfo
 
 AdvancementInfo API is a specialized library designed to simplify the retrieval and manipulation of Minecraft advancements in your plugins. It abstracts the underlying complexity of accessing advancement data—such as titles, descriptions, icons, criteria, rewards, and display settings—by providing a uniform interface and several concrete implementations that use reflection to work with Bukkit, Paper, and other server internals.
