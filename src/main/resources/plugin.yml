@@ -1,0 +1,7 @@
+main: me.croabeast.advancement.plugin.AInfoPlugin
+
+name: AdvancementInfo
+version: '${project.version}'
+prefix: AInfo
+authors: [ CroaBeast ]
+api-version: 1.13
